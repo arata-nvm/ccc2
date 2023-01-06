@@ -63,6 +63,10 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_DIV);
   case '%':
     return new_token(TOKEN_REM);
+  case '(':
+    return new_token(TOKEN_PAREN_OPEN);
+  case ')':
+    return new_token(TOKEN_PAREN_CLOSE);
   }
 
   error("unexpected char");

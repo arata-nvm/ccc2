@@ -8,6 +8,8 @@ typedef enum {
   TOKEN_MUL,
   TOKEN_DIV,
   TOKEN_REM,
+  TOKEN_PAREN_OPEN,
+  TOKEN_PAREN_CLOSE,
   TOKEN_NUMBER,
 } tokentype_t;
 

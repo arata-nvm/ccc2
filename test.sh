@@ -28,5 +28,7 @@ assert 13 1+3*4
 assert 27 4*6+6/2
 assert 1 3%2
 assert 6 +1*-2*-3
+assert 14 1*2+3*4
+assert 20 "1*(2+3)*4"
 
 echo "OK"
