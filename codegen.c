@@ -171,7 +171,7 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     break;
   case STMT_RETURN:
     gen_expr(stmt->value.ret, ctx);
-    gen(ctx, "  b main.ret\n");
+    gen(ctx, "  b .Lmain.ret\n");
     break;
   case STMT_IF: {
     int else_label = next_label(ctx);
@@ -179,28 +179,28 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     gen_expr(stmt->value.if_.cond, ctx);
     gen_pop(ctx, "x0");
     gen(ctx, "  subs x0, x0, 0\n");
-    gen(ctx, "  beq .if.%d\n", else_label);
+    gen(ctx, "  beq .Lif.%d\n", else_label);
     gen_stmt(stmt->value.if_.then_, ctx);
     if (stmt->value.if_.else_) {
-      gen(ctx, "b .if.%d\n", merge_label);
+      gen(ctx, "b .Lif.%d\n", merge_label);
     }
-    gen(ctx, ".if.%d:\n", else_label);
+    gen(ctx, ".Lif.%d:\n", else_label);
     if (stmt->value.if_.else_) {
       gen_stmt(stmt->value.if_.else_, ctx);
-      gen(ctx, ".if.%d:\n", merge_label);
+      gen(ctx, ".Lif.%d:\n", merge_label);
     }
     break;
   }
   case STMT_WHILE: {
     int cond_label = next_label(ctx);
     int end_label = next_label(ctx);
-    gen(ctx, ".while.%d:\n", cond_label);
+    gen(ctx, ".Lwhile.%d:\n", cond_label);
     gen_expr(stmt->value.while_.cond, ctx);
     gen(ctx, "  subs x0, x0, 0\n");
-    gen(ctx, "  beq .while.%d\n", end_label);
+    gen(ctx, "  beq .Lwhile.%d\n", end_label);
     gen_stmt(stmt->value.while_.body, ctx);
-    gen(ctx, "  b .while.%d\n", cond_label);
-    gen(ctx, ".while.%d:\n", end_label);
+    gen(ctx, "  b .Lwhile.%d\n", cond_label);
+    gen(ctx, ".Lwhile.%d:\n", end_label);
     break;
   }
   case STMT_FOR: {
@@ -209,18 +209,18 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     if (stmt->value.for_.init) {
       gen_expr(stmt->value.for_.init, ctx);
     }
-    gen(ctx, ".for.%d:\n", cond_label);
+    gen(ctx, ".Lfor.%d:\n", cond_label);
     if (stmt->value.for_.cond) {
       gen_expr(stmt->value.for_.cond, ctx);
       gen(ctx, "  subs x0, x0, 0\n");
-      gen(ctx, "  beq .for.%d\n", end_label);
+      gen(ctx, "  beq .Lfor.%d\n", end_label);
     }
     gen_stmt(stmt->value.for_.body, ctx);
     if (stmt->value.for_.loop) {
       gen_expr(stmt->value.for_.loop, ctx);
     }
-    gen(ctx, "  b .for.%d\n", cond_label);
-    gen(ctx, ".for.%d:\n", end_label);
+    gen(ctx, "  b .Lfor.%d\n", cond_label);
+    gen(ctx, ".Lfor.%d:\n", end_label);
   }
   }
 }
@@ -239,7 +239,7 @@ void gen_code(stmt_t *stmt, FILE *fp) {
     cur = cur->next;
   }
 
-  gen(ctx, "main.ret:\n");
+  gen(ctx, ".Lmain.ret:\n");
   gen_pop(ctx, "x0");
   gen(ctx, "  mov sp, x29\n");
   gen(ctx, "  add sp, sp, 0x100\n");
