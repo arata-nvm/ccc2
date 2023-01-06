@@ -23,6 +23,7 @@ typedef enum {
   TOKEN_RETURN,
   TOKEN_IF,
   TOKEN_ELSE,
+  TOKEN_WHILE,
 } tokentype_t;
 
 typedef struct _token_t token_t;

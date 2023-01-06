@@ -191,6 +191,18 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     }
     break;
   }
+  case STMT_WHILE: {
+    int cond_label = next_label(ctx);
+    int end_label = next_label(ctx);
+    gen(ctx, ".while.%d:\n", cond_label);
+    gen_expr(stmt->value.while_.cond, ctx);
+    gen(ctx, "  subs x0, x0, 0\n");
+    gen(ctx, "  beq .while.%d\n", end_label);
+    gen_stmt(stmt->value.while_.body, ctx);
+    gen(ctx, "  b .while.%d\n", cond_label);
+    gen(ctx, ".while.%d:\n", end_label);
+    break;
+  }
   }
 }
 

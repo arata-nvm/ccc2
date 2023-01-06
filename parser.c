@@ -208,6 +208,16 @@ stmt_t *parse_if(token_cursor_t *cursor) {
   return stmt;
 }
 
+stmt_t *parse_while(token_cursor_t *cursor) {
+  expect(cursor, TOKEN_WHILE);
+  stmt_t *stmt = new_stmt(STMT_WHILE);
+  expect(cursor, TOKEN_PAREN_OPEN);
+  stmt->value.while_.cond = parse_expr(cursor);
+  expect(cursor, TOKEN_PAREN_CLOSE);
+  stmt->value.while_.body = parse_stmt(cursor);
+  return stmt;
+}
+
 stmt_t *parse_stmt(token_cursor_t *cursor) {
   stmt_t *stmt;
   switch (peek(cursor)->type) {
@@ -217,6 +227,9 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
     break;
   case TOKEN_IF:
     stmt = parse_if(cursor);
+    break;
+  case TOKEN_WHILE:
+    stmt = parse_while(cursor);
     break;
   default:
     stmt = new_stmt(STMT_EXPR);
