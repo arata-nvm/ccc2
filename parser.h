@@ -52,6 +52,7 @@ expr_t *new_expr(exprtype_t type);
 typedef enum {
   STMT_EXPR,
   STMT_RETURN,
+  STMT_IF,
 } stmttype_t;
 
 typedef struct _stmt_t stmt_t;
@@ -60,6 +61,10 @@ struct _stmt_t {
   union {
     expr_t *expr;
     expr_t *ret;
+    struct {
+      expr_t *cond;
+      stmt_t *then_;
+    } if_;
   } value;
 
   stmt_t *next;

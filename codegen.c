@@ -34,6 +34,11 @@ int next_offset(codegen_ctx_t *ctx) {
   return ctx->cur_offset;
 }
 
+int next_label(codegen_ctx_t *ctx) {
+  ctx->cur_label++;
+  return ctx->cur_label;
+}
+
 void gen(codegen_ctx_t *ctx, char *format, ...) {
   va_list args;
   va_start(args, format);
@@ -168,6 +173,16 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     gen_expr(stmt->value.ret, ctx);
     gen(ctx, "  b main.ret\n");
     break;
+  case STMT_IF: {
+    int else_label = next_label(ctx);
+    gen_expr(stmt->value.if_.cond, ctx);
+    gen_pop(ctx, "x0");
+    gen(ctx, "  subs x0, x0, 0\n");
+    gen(ctx, "  beq .if.%d\n", else_label);
+    gen_stmt(stmt->value.if_.then_, ctx);
+    gen(ctx, ".if.%d:\n", else_label);
+    break;
+  }
   }
 }
 

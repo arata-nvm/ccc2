@@ -21,6 +21,7 @@ typedef enum {
   TOKEN_SEMICOLON,
   TOKEN_ASSIGN,
   TOKEN_RETURN,
+  TOKEN_IF,
 } tokentype_t;
 
 typedef struct _token_t token_t;

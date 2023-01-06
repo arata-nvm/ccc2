@@ -26,8 +26,11 @@ void replace_reserved_tokens(token_t *token) {
     return;
   }
 
-  if (!strcmp(token->value.ident, "return")) {
+  char *ident = token->value.ident;
+  if (!strcmp(ident, "return")) {
     token->type = TOKEN_RETURN;
+  } else if (!strcmp(ident, "if")) {
+    token->type = TOKEN_IF;
   }
 }
 

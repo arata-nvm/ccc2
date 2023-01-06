@@ -14,6 +14,7 @@ typedef struct {
   FILE *fp;
   variable_t *variables;
   int cur_offset;
+  int cur_label;
 } codegen_ctx_t;
 
 codegen_ctx_t *new_codegen_ctx(FILE *fp);

@@ -192,15 +192,32 @@ stmt_t *parse_return(token_cursor_t *cursor) {
   return stmt;
 }
 
+stmt_t *parse_if(token_cursor_t *cursor) {
+  expect(cursor, TOKEN_IF);
+  stmt_t *stmt = new_stmt(STMT_IF);
+  expect(cursor, TOKEN_PAREN_OPEN);
+  stmt->value.if_.cond = parse_expr(cursor);
+  expect(cursor, TOKEN_PAREN_CLOSE);
+  stmt->value.if_.then_ = parse_stmt(cursor);
+  return stmt;
+}
+
 stmt_t *parse_stmt(token_cursor_t *cursor) {
   stmt_t *stmt;
-  if (peek(cursor)->type == TOKEN_RETURN) {
+  switch (peek(cursor)->type) {
+  case TOKEN_RETURN:
     stmt = parse_return(cursor);
-  } else {
+    expect(cursor, TOKEN_SEMICOLON);
+    break;
+  case TOKEN_IF:
+    stmt = parse_if(cursor);
+    break;
+  default:
     stmt = new_stmt(STMT_EXPR);
     stmt->value.expr = parse_expr(cursor);
+    expect(cursor, TOKEN_SEMICOLON);
+    break;
   }
-  expect(cursor, TOKEN_SEMICOLON);
   return stmt;
 }
 
