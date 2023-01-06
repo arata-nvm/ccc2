@@ -10,6 +10,13 @@ codegen_ctx_t *new_codegen_ctx(FILE *fp) {
   return ctx;
 }
 
+void init_ctx(codegen_ctx_t *ctx, char *func_name) {
+  ctx->variables = NULL;
+  ctx->cur_offset = 16;
+  ctx->cur_label = 0;
+  ctx->cur_func_name = func_name;
+}
+
 void add_variable(codegen_ctx_t *ctx, char *name, int offset) {
   variable_t *variable = calloc(1, sizeof(variable_t));
   variable->name = name;
@@ -254,16 +261,34 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
   }
 }
 
+void gen_func_parameter(parameter_t *params, codegen_ctx_t *ctx) {
+  int i = 0;
+  char reg_name[3];
+  while (params) {
+    int offset = next_offset(ctx);
+    add_variable(ctx, params->name, offset);
+    if (i > 7) {
+      error("cannot use > 7 arguments");
+    }
+    snprintf(reg_name, 3, "x%d", i);
+    gen(ctx, "  str %s, [sp, %d]\n", reg_name, offset);
+    i++;
+    params = params->next;
+  }
+}
+
 void gen_global_stmt(global_stmt_t *gstmt, codegen_ctx_t *ctx) {
   switch (gstmt->type) {
   case GSTMT_FUNC:
-    ctx->cur_func_name = gstmt->value.func.name;
+    init_ctx(ctx, gstmt->value.func.name);
+
     gen(ctx, ".global %s\n", ctx->cur_func_name);
     gen(ctx, "%s:\n", ctx->cur_func_name);
     gen(ctx, "  sub sp, sp, 0x900\n"); // TODO
     gen(ctx, "  stp x29, x30, [sp, 16]\n");
     gen(ctx, "  mov x29, sp\n");
 
+    gen_func_parameter(gstmt->value.func.params, ctx);
     gen_stmt(gstmt->value.func.body, ctx);
 
     gen(ctx, ".L%s.ret:\n", ctx->cur_func_name);

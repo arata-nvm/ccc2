@@ -57,6 +57,7 @@ assert 10 "main() { i = 0; while (i < 10) { i = i + 1; } return i; }"
 assert 55 "main() { sum = 0; for (i = 0; i <= 10; i = i + 1) { sum = sum + i; } return sum; }"
 assert 1 "main() { {} return 1; }"
 assert 1 "test() { return 1; } main() { return test(); }"
-# assert 1 "main() { test(1, 2); return 1; }"
+assert 1 "test(a) { return a; } main() { return test(1); }"
+assert 3 "test(a, b) { return a + b; } main() { return test(1, 2); }"
 
 echo "OK;"

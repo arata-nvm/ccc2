@@ -72,6 +72,12 @@ stmt_list_t *new_stmt_list(stmt_t *stmt) {
   return stmt_list;
 }
 
+argument_t *new_parameter(char *name) {
+  parameter_t *parameter = calloc(1, sizeof(parameter_t));
+  parameter->name = name;
+  return parameter;
+}
+
 global_stmt_t *new_global_stmt(global_stmttype_t type) {
   global_stmt_t *gstmt = calloc(1, sizeof(global_stmt_t));
   gstmt->type = type;
@@ -343,10 +349,30 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
   }
 }
 
+parameter_t *parse_parameter(token_cursor_t *cursor) {
+  if (peek(cursor)->type == TOKEN_PAREN_CLOSE) {
+    return NULL;
+  }
+
+  char *name = expect(cursor, TOKEN_IDENT)->value.ident;
+  parameter_t *head = new_parameter(name);
+  parameter_t *cur = head;
+
+  while (peek(cursor)->type == TOKEN_COMMA) {
+    expect(cursor, TOKEN_COMMA);
+    name = expect(cursor, TOKEN_IDENT)->value.ident;
+    cur->next = new_parameter(name);
+    cur = cur->next;
+  }
+
+  return head;
+}
+
 global_stmt_t *parse_global_stmt(token_cursor_t *cursor) {
   global_stmt_t *gstmt = new_global_stmt(GSTMT_FUNC);
   gstmt->value.func.name = expect(cursor, TOKEN_IDENT)->value.ident;
   expect(cursor, TOKEN_PAREN_OPEN);
+  gstmt->value.func.params = parse_parameter(cursor);
   expect(cursor, TOKEN_PAREN_CLOSE);
   gstmt->value.func.body = parse_stmt(cursor);
   return gstmt;

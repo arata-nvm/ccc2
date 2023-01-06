@@ -96,12 +96,19 @@ typedef enum {
   GSTMT_FUNC,
 } global_stmttype_t;
 
+typedef struct _parameter_t parameter_t;
+struct _parameter_t {
+  char *name;
+  parameter_t *next;
+};
+
 typedef struct _global_stmt_t global_stmt_t;
 struct _global_stmt_t {
   global_stmttype_t type;
   union {
     struct {
       char *name;
+      parameter_t *params;
       stmt_t *body;
     } func;
   } value;
