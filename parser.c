@@ -307,13 +307,5 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
 
 stmt_t *parse(token_t *token) {
   token_cursor_t *cursor = new_token_cursor(token);
-  stmt_t *head = parse_stmt(cursor);
-  stmt_t *cur = head;
-
-  while (peek(cursor)->type != TOKEN_EOF) {
-    cur->next = parse_stmt(cursor);
-    cur = cur->next;
-  }
-
-  return head;
+  return parse_stmt(cursor);
 }

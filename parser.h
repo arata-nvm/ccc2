@@ -73,8 +73,6 @@ struct _stmt_t {
     } for_;
     stmt_list_t *block;
   } value;
-
-  stmt_t *next;
 };
 
 struct _stmt_list_t {

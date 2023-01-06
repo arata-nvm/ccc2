@@ -242,11 +242,7 @@ void gen_code(stmt_t *stmt, FILE *fp) {
   gen(ctx, "  sub sp, sp, 0x100\n"); // TODO
   gen(ctx, "  mov x29, sp\n");
 
-  stmt_t *cur = stmt;
-  while (cur) {
-    gen_stmt(cur, ctx);
-    cur = cur->next;
-  }
+  gen_stmt(stmt, ctx);
 
   gen(ctx, ".Lmain.ret:\n");
   gen_pop(ctx, "x0");
