@@ -4,8 +4,9 @@ assert() {
   expected="$1"
   input="$2"
 
-  echo "$input" | ./ccc > tmp.s
-  gcc -o tmp tmp.s
+  echo "$input" > tmp.c
+  ./ccc tmp.c > tmp.s
+  gcc -o tmp tmp.s 
   ./tmp
   actual="$?"
 
