@@ -127,6 +127,8 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_BRACE_OPEN);
   case '}':
     return new_token(TOKEN_BRACE_CLOSE);
+  case ',':
+    return new_token(TOKEN_COMMA);
   case '<': {
     char c2 = fgetc(fp);
     if (c2 == '=') {

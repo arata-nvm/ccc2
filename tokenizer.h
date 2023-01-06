@@ -27,6 +27,7 @@ typedef enum {
   TOKEN_ELSE,
   TOKEN_WHILE,
   TOKEN_FOR,
+  TOKEN_COMMA,
 } tokentype_t;
 
 typedef struct _token_t token_t;

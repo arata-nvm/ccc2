@@ -54,6 +54,12 @@ expr_t *new_binary_expr(exprtype_t type, expr_t *lhs, expr_t *rhs) {
   return expr;
 }
 
+argument_t *new_argument(expr_t *arg) {
+  argument_t *argument = calloc(1, sizeof(argument_t));
+  argument->arg = arg;
+  return argument;
+}
+
 stmt_t *new_stmt(stmttype_t type) {
   stmt_t *stmt = calloc(1, sizeof(stmt_t));
   stmt->type = type;
@@ -71,6 +77,23 @@ expr_t *parse_number(token_cursor_t *cursor) {
   return new_number_expr(value);
 }
 
+argument_t *parse_arguments(token_cursor_t *cursor) {
+  if (peek(cursor)->type == TOKEN_PAREN_CLOSE) {
+    return NULL;
+  }
+
+  argument_t *head = new_argument(parse_expr(cursor));
+  argument_t *cur = head;
+
+  while (peek(cursor)->type == TOKEN_COMMA) {
+    expect(cursor, TOKEN_COMMA);
+    cur->next = new_argument(parse_expr(cursor));
+    cur = cur->next;
+  }
+
+  return head;
+}
+
 expr_t *parse_primary(token_cursor_t *cursor) {
   if (peek(cursor)->type == TOKEN_PAREN_OPEN) {
     consume(cursor);
@@ -81,9 +104,10 @@ expr_t *parse_primary(token_cursor_t *cursor) {
     char *name = consume(cursor)->value.ident;
     if (peek(cursor)->type == TOKEN_PAREN_OPEN) {
       consume(cursor);
-      expect(cursor, TOKEN_PAREN_CLOSE);
       expr_t *expr = new_expr(EXPR_CALL);
-      expr->value.ident = name;
+      expr->value.call.name = name;
+      expr->value.call.args = parse_arguments(cursor);
+      expect(cursor, TOKEN_PAREN_CLOSE);
       return expr;
     } else {
       return new_ident_expr(name);

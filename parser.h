@@ -23,6 +23,8 @@ typedef enum {
   EXPR_CALL,
 } exprtype_t;
 
+typedef struct _argument_t argument_t;
+
 typedef struct _expr_t expr_t;
 struct _expr_t {
   exprtype_t type;
@@ -37,7 +39,16 @@ struct _expr_t {
       expr_t *dst;
       expr_t *src;
     } assign;
+    struct {
+      char *name;
+      argument_t *args;
+    } call;
   } value;
+};
+
+struct _argument_t {
+  expr_t *arg;
+  argument_t *next;
 };
 
 typedef enum {
