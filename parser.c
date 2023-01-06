@@ -47,6 +47,12 @@ expr_t *new_ident_expr(char *name) {
   return expr;
 }
 
+expr_t *new_unary_expr(exprtype_t type, expr_t *expr2) {
+  expr_t *expr = new_expr(type);
+  expr->value.unary = expr2;
+  return expr;
+}
+
 expr_t *new_binary_expr(exprtype_t type, expr_t *lhs, expr_t *rhs) {
   expr_t *expr = new_expr(type);
   expr->value.binary.lhs = lhs;
@@ -107,12 +113,13 @@ argument_t *parse_arguments(token_cursor_t *cursor) {
 }
 
 expr_t *parse_primary(token_cursor_t *cursor) {
-  if (peek(cursor)->type == TOKEN_PAREN_OPEN) {
+  switch (peek(cursor)->type) {
+  case TOKEN_PAREN_OPEN:
     consume(cursor);
     expr_t *expr = parse_expr(cursor);
     expect(cursor, TOKEN_PAREN_CLOSE);
     return expr;
-  } else if (peek(cursor)->type == TOKEN_IDENT) {
+  case TOKEN_IDENT: {
     char *name = consume(cursor)->value.ident;
     if (peek(cursor)->type == TOKEN_PAREN_OPEN) {
       consume(cursor);
@@ -125,101 +132,110 @@ expr_t *parse_primary(token_cursor_t *cursor) {
       return new_ident_expr(name);
     }
   }
-
-  return parse_number(cursor);
+  default:
+    return parse_number(cursor);
+  }
 }
 
 expr_t *parse_unary(token_cursor_t *cursor) {
-  if (peek(cursor)->type == TOKEN_ADD) {
+  switch (peek(cursor)->type) {
+  case TOKEN_ADD:
     consume(cursor);
     return parse_primary(cursor);
-  } else if (peek(cursor)->type == TOKEN_SUB) {
+  case TOKEN_SUB:
     consume(cursor);
     return new_binary_expr(EXPR_SUB, new_number_expr(0), parse_primary(cursor));
+  default:
+    return parse_primary(cursor);
   }
-
-  return parse_primary(cursor);
 }
 
 expr_t *parse_mul_div(token_cursor_t *cursor) {
   expr_t *expr = parse_unary(cursor);
 
   while (1) {
-    if (peek(cursor)->type == TOKEN_MUL) {
+    switch (peek(cursor)->type) {
+    case TOKEN_MUL:
       consume(cursor);
       expr = new_binary_expr(EXPR_MUL, expr, parse_unary(cursor));
-    } else if (peek(cursor)->type == TOKEN_DIV) {
+      break;
+    case TOKEN_DIV:
       consume(cursor);
       expr = new_binary_expr(EXPR_DIV, expr, parse_unary(cursor));
-    } else if (peek(cursor)->type == TOKEN_REM) {
+      break;
+    case TOKEN_REM:
       consume(cursor);
       expr = new_binary_expr(EXPR_REM, expr, parse_unary(cursor));
-    } else {
       break;
+    default:
+      return expr;
     }
   }
-
-  return expr;
 }
 
 expr_t *parse_add_sub(token_cursor_t *cursor) {
   expr_t *expr = parse_mul_div(cursor);
 
   while (1) {
-    if (peek(cursor)->type == TOKEN_ADD) {
+    switch (peek(cursor)->type) {
+    case TOKEN_ADD:
       consume(cursor);
       expr = new_binary_expr(EXPR_ADD, expr, parse_mul_div(cursor));
-    } else if (peek(cursor)->type == TOKEN_SUB) {
+      break;
+    case TOKEN_SUB:
       consume(cursor);
       expr = new_binary_expr(EXPR_SUB, expr, parse_mul_div(cursor));
-    } else {
       break;
+    default:
+      return expr;
     }
   }
-
-  return expr;
 }
 
 expr_t *parse_relational(token_cursor_t *cursor) {
   expr_t *expr = parse_add_sub(cursor);
 
   while (1) {
-    if (peek(cursor)->type == TOKEN_LT) {
+    switch (peek(cursor)->type) {
+    case TOKEN_LT:
       consume(cursor);
       expr = new_binary_expr(EXPR_LT, expr, parse_add_sub(cursor));
-    } else if (peek(cursor)->type == TOKEN_LE) {
+      break;
+    case TOKEN_LE:
       consume(cursor);
       expr = new_binary_expr(EXPR_LE, expr, parse_add_sub(cursor));
-    } else if (peek(cursor)->type == TOKEN_GT) {
+      break;
+    case TOKEN_GT:
       consume(cursor);
       expr = new_binary_expr(EXPR_GT, expr, parse_add_sub(cursor));
-    } else if (peek(cursor)->type == TOKEN_GE) {
+      break;
+    case TOKEN_GE:
       consume(cursor);
       expr = new_binary_expr(EXPR_GE, expr, parse_add_sub(cursor));
-    } else {
       break;
+    default:
+      return expr;
     }
   }
-
-  return expr;
 }
 
 expr_t *parse_equality(token_cursor_t *cursor) {
   expr_t *expr = parse_relational(cursor);
 
   while (1) {
-    if (peek(cursor)->type == TOKEN_EQ) {
+    switch (peek(cursor)->type) {
+    case TOKEN_EQ:
       consume(cursor);
       expr = new_binary_expr(EXPR_EQ, expr, parse_relational(cursor));
-    } else if (peek(cursor)->type == TOKEN_NE) {
+      break;
+    case TOKEN_NE:
       consume(cursor);
       expr = new_binary_expr(EXPR_NE, expr, parse_relational(cursor));
-    } else {
       break;
+    default:
+      return expr;
     }
   }
-
-  return expr;
 }
 
 expr_t *parse_assign(token_cursor_t *cursor) {
