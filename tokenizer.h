@@ -20,6 +20,7 @@ typedef enum {
   TOKEN_NE,
   TOKEN_SEMICOLON,
   TOKEN_ASSIGN,
+  TOKEN_RETURN,
 } tokentype_t;
 
 typedef struct _token_t token_t;
@@ -38,6 +39,8 @@ token_t *new_token(tokentype_t type);
 int read_char(FILE *fp);
 
 int is_ident_char(char c);
+
+void replace_reserved_tokens(token_t *token);
 
 token_t *read_ident_token(FILE *fp);
 

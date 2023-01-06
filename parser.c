@@ -185,9 +185,21 @@ expr_t *parse_assign(token_cursor_t *cursor) {
 
 expr_t *parse_expr(token_cursor_t *cursor) { return parse_assign(cursor); }
 
+stmt_t *parse_return(token_cursor_t *cursor) {
+  expect(cursor, TOKEN_RETURN);
+  stmt_t *stmt = new_stmt(STMT_RETURN);
+  stmt->value.ret = parse_expr(cursor);
+  return stmt;
+}
+
 stmt_t *parse_stmt(token_cursor_t *cursor) {
-  stmt_t *stmt = new_stmt(STMT_EXPR);
-  stmt->value.expr = parse_expr(cursor);
+  stmt_t *stmt;
+  if (peek(cursor)->type == TOKEN_RETURN) {
+    stmt = parse_return(cursor);
+  } else {
+    stmt = new_stmt(STMT_EXPR);
+    stmt->value.expr = parse_expr(cursor);
+  }
   expect(cursor, TOKEN_SEMICOLON);
   return stmt;
 }

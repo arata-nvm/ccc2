@@ -21,6 +21,16 @@ int read_char(FILE *fp) {
 
 int is_ident_char(char c) { return isalnum(c) || c == '_'; }
 
+void replace_reserved_tokens(token_t *token) {
+  if (token->type != TOKEN_IDENT) {
+    return;
+  }
+
+  if (!strcmp(token->value.ident, "return")) {
+    token->type = TOKEN_RETURN;
+  }
+}
+
 token_t *read_ident_token(FILE *fp) {
   char buf[256];
   int buf_index = 0;
@@ -42,6 +52,8 @@ token_t *read_ident_token(FILE *fp) {
   token_t *token = new_token(TOKEN_IDENT);
   token->value.ident = calloc(1, buf_index);
   strncpy(token->value.ident, buf, buf_index);
+
+  replace_reserved_tokens(token);
 
   return token;
 }

@@ -51,6 +51,7 @@ expr_t *new_expr(exprtype_t type);
 
 typedef enum {
   STMT_EXPR,
+  STMT_RETURN,
 } stmttype_t;
 
 typedef struct _stmt_t stmt_t;
@@ -58,6 +59,7 @@ struct _stmt_t {
   stmttype_t type;
   union {
     expr_t *expr;
+    expr_t *ret;
   } value;
 
   stmt_t *next;
@@ -78,6 +80,8 @@ expr_t *parse_relational(token_cursor_t *cursor);
 expr_t *parse_equality(token_cursor_t *cursor);
 
 expr_t *parse_expr(token_cursor_t *token);
+
+stmt_t *parse_return(token_cursor_t *cursor);
 
 stmt_t *parse_stmt(token_cursor_t *token);
 

@@ -164,6 +164,10 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
   case STMT_EXPR:
     gen_expr(stmt->value.expr, ctx);
     break;
+  case STMT_RETURN:
+    gen_expr(stmt->value.ret, ctx);
+    gen(ctx, "  b main.ret\n");
+    break;
   }
 }
 
@@ -181,6 +185,7 @@ void gen_code(stmt_t *stmt, FILE *fp) {
     cur = cur->next;
   }
 
+  gen(ctx, "main.ret:\n");
   gen_pop(ctx, "x0");
   gen(ctx, "  mov sp, x29\n");
   gen(ctx, "  add sp, sp, 0x100\n");
