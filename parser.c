@@ -32,6 +32,13 @@ node_t *new_node(nodetype_t type) {
   return node;
 }
 
+node_t *new_binary_node(nodetype_t type, node_t *lhs, node_t *rhs) {
+  node_t *node = new_node(type);
+  node->value.binary.lhs = lhs;
+  node->value.binary.rhs = rhs;
+  return node;
+}
+
 node_t *parse_number(token_cursor_t *cursor) {
   int value = expect(cursor, TOKEN_NUMBER)->value.number;
 
@@ -40,16 +47,19 @@ node_t *parse_number(token_cursor_t *cursor) {
   return node;
 }
 
-node_t *parse_add(token_cursor_t *cursor) {
+node_t *parse_add_sub(token_cursor_t *cursor) {
   node_t *node = parse_number(cursor);
 
-  while (consume(cursor)->type == TOKEN_ADD) {
-    node_t *rhs = parse_number(cursor);
-
-    node_t *node_new = new_node(NODE_ADD);
-    node_new->value.binary.lhs = node;
-    node_new->value.binary.rhs = rhs;
-    node = node_new;
+  while (1) {
+    if (peek(cursor)->type == TOKEN_ADD) {
+      consume(cursor);
+      node = new_binary_node(NODE_ADD, node, parse_number(cursor));
+    } else if (peek(cursor)->type == TOKEN_SUB) {
+      consume(cursor);
+      node = new_binary_node(NODE_SUB, node, parse_number(cursor));
+    } else {
+      break;
+    }
   }
 
   return node;
@@ -57,5 +67,5 @@ node_t *parse_add(token_cursor_t *cursor) {
 
 node_t *parse(token_t *token) {
   token_cursor_t *cursor = new_token_cursor(token);
-  return parse_add(cursor);
+  return parse_add_sub(cursor);
 }

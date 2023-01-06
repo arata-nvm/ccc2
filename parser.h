@@ -16,6 +16,7 @@ token_t *expect(token_cursor_t *cursor, tokentype_t type);
 typedef enum {
   NODE_NUMBER,
   NODE_ADD,
+  NODE_SUB,
 } nodetype_t;
 
 typedef struct _node_t node_t;
@@ -34,6 +35,6 @@ node_t *new_node(nodetype_t type);
 
 node_t *parse_number(token_cursor_t *cursor);
 
-node_t *parse_add(token_cursor_t *cursor);
+node_t *parse_add_sub(token_cursor_t *cursor);
 
 node_t *parse(token_t *token);

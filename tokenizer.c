@@ -55,6 +55,8 @@ token_t *read_next_token(FILE *fp) {
   switch (c) {
   case '+':
     return new_token(TOKEN_ADD);
+  case '-':
+    return new_token(TOKEN_SUB);
   }
 
   error("unexpected char");

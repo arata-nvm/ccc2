@@ -15,13 +15,22 @@ void gen_node(node_t *node, FILE *fp) {
   case NODE_NUMBER:
     fprintf(fp, "  mov x0, %d\n", node->value.number);
     push(fp, "x0");
-    break;
+    return;
+  }
+
+  // binary op
+  gen_node(node->value.binary.lhs, fp);
+  gen_node(node->value.binary.rhs, fp);
+  pop(fp, "x1");
+  pop(fp, "x0");
+
+  switch (node->type) {
   case NODE_ADD:
-    gen_node(node->value.binary.lhs, fp);
-    gen_node(node->value.binary.rhs, fp);
-    pop(fp, "x0");
-    pop(fp, "x1");
     fprintf(fp, "  add x0, x0, x1\n");
+    push(fp, "x0");
+    break;
+  case NODE_SUB:
+    fprintf(fp, "  sub x0, x0, x1\n");
     push(fp, "x0");
     break;
   }
