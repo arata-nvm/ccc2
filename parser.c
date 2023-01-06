@@ -199,6 +199,12 @@ stmt_t *parse_if(token_cursor_t *cursor) {
   stmt->value.if_.cond = parse_expr(cursor);
   expect(cursor, TOKEN_PAREN_CLOSE);
   stmt->value.if_.then_ = parse_stmt(cursor);
+  if (peek(cursor)->type == TOKEN_ELSE) {
+    consume(cursor);
+    stmt->value.if_.else_ = parse_stmt(cursor);
+  } else {
+    stmt->value.if_.else_ = NULL;
+  }
   return stmt;
 }
 

@@ -22,6 +22,7 @@ typedef enum {
   TOKEN_ASSIGN,
   TOKEN_RETURN,
   TOKEN_IF,
+  TOKEN_ELSE,
 } tokentype_t;
 
 typedef struct _token_t token_t;

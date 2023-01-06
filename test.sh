@@ -51,5 +51,7 @@ assert 3 "a=1; b=2; return a+b;"
 assert 1 "return 1; return 2;"
 assert 1 "if (0==0) return 1; return 2;"
 assert 2 "if (0==1) return 1; return 2;"
+assert 1 "if (0==0) return 1; else return 2; return 3;"
+assert 2 "if (0==1) return 1; else return 2; return 3;"
 
 echo "OK;"

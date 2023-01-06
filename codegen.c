@@ -175,12 +175,20 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     break;
   case STMT_IF: {
     int else_label = next_label(ctx);
+    int merge_label = next_label(ctx);
     gen_expr(stmt->value.if_.cond, ctx);
     gen_pop(ctx, "x0");
     gen(ctx, "  subs x0, x0, 0\n");
     gen(ctx, "  beq .if.%d\n", else_label);
     gen_stmt(stmt->value.if_.then_, ctx);
+    if (stmt->value.if_.else_) {
+      gen(ctx, "b .if.%d\n", merge_label);
+    }
     gen(ctx, ".if.%d:\n", else_label);
+    if (stmt->value.if_.else_) {
+      gen_stmt(stmt->value.if_.else_, ctx);
+      gen(ctx, ".if.%d:\n", merge_label);
+    }
     break;
   }
   }

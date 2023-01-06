@@ -49,11 +49,7 @@ struct _expr_t {
 
 expr_t *new_expr(exprtype_t type);
 
-typedef enum {
-  STMT_EXPR,
-  STMT_RETURN,
-  STMT_IF,
-} stmttype_t;
+typedef enum { STMT_EXPR, STMT_RETURN, STMT_IF, STMT_ELSE } stmttype_t;
 
 typedef struct _stmt_t stmt_t;
 struct _stmt_t {
@@ -64,6 +60,7 @@ struct _stmt_t {
     struct {
       expr_t *cond;
       stmt_t *then_;
+      stmt_t *else_;
     } if_;
   } value;
 
