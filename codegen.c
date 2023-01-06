@@ -203,6 +203,25 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     gen(ctx, ".while.%d:\n", end_label);
     break;
   }
+  case STMT_FOR: {
+    int cond_label = next_label(ctx);
+    int end_label = next_label(ctx);
+    if (stmt->value.for_.init) {
+      gen_expr(stmt->value.for_.init, ctx);
+    }
+    gen(ctx, ".for.%d:\n", cond_label);
+    if (stmt->value.for_.cond) {
+      gen_expr(stmt->value.for_.cond, ctx);
+      gen(ctx, "  subs x0, x0, 0\n");
+      gen(ctx, "  beq .for.%d\n", end_label);
+    }
+    gen_stmt(stmt->value.for_.body, ctx);
+    if (stmt->value.for_.loop) {
+      gen_expr(stmt->value.for_.loop, ctx);
+    }
+    gen(ctx, "  b .for.%d\n", cond_label);
+    gen(ctx, ".for.%d:\n", end_label);
+  }
   }
 }
 

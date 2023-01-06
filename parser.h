@@ -55,6 +55,7 @@ typedef enum {
   STMT_IF,
   STMT_ELSE,
   STMT_WHILE,
+  STMT_FOR,
 } stmttype_t;
 
 typedef struct _stmt_t stmt_t;
@@ -72,6 +73,12 @@ struct _stmt_t {
       expr_t *cond;
       stmt_t *body;
     } while_;
+    struct {
+      expr_t *init;
+      expr_t *cond;
+      expr_t *loop;
+      stmt_t *body;
+    } for_;
   } value;
 
   stmt_t *next;

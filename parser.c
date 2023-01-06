@@ -218,6 +218,37 @@ stmt_t *parse_while(token_cursor_t *cursor) {
   return stmt;
 }
 
+stmt_t *parse_for(token_cursor_t *cursor) {
+  stmt_t *stmt = new_stmt(STMT_FOR);
+  expect(cursor, TOKEN_FOR);
+  expect(cursor, TOKEN_PAREN_OPEN);
+
+  if (peek(cursor)->type != TOKEN_SEMICOLON) {
+    stmt->value.for_.init = parse_expr(cursor);
+  } else {
+    stmt->value.for_.init = NULL;
+  }
+  expect(cursor, TOKEN_SEMICOLON);
+
+  if (peek(cursor)->type != TOKEN_SEMICOLON) {
+    stmt->value.for_.cond = parse_expr(cursor);
+  } else {
+    stmt->value.for_.cond = NULL;
+  }
+  expect(cursor, TOKEN_SEMICOLON);
+
+  if (peek(cursor)->type != TOKEN_PAREN_CLOSE) {
+    stmt->value.for_.loop = parse_expr(cursor);
+  } else {
+    stmt->value.for_.loop = NULL;
+  }
+  expect(cursor, TOKEN_PAREN_CLOSE);
+
+  stmt->value.for_.body = parse_stmt(cursor);
+
+  return stmt;
+}
+
 stmt_t *parse_stmt(token_cursor_t *cursor) {
   stmt_t *stmt;
   switch (peek(cursor)->type) {
@@ -230,6 +261,9 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
     break;
   case TOKEN_WHILE:
     stmt = parse_while(cursor);
+    break;
+  case TOKEN_FOR:
+    stmt = parse_for(cursor);
     break;
   default:
     stmt = new_stmt(STMT_EXPR);
