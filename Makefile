@@ -5,7 +5,8 @@ CC = gcc
 CFLAGS = -Wall -g -std=c17
 
 $(TARGET): $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
 .PHONY: clean
 clean:
-	rm -rf *.o
+	rm -rf *.o $(TARGET)
