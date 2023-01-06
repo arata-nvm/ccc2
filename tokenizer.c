@@ -3,6 +3,12 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+token_t *new_token(tokentype_t type) {
+  token_t *token = calloc(1, sizeof(token_t));
+  token->type = type;
+  return token;
+}
+
 int read_char(FILE *fp) {
   int c = fgetc(fp);
   while (isspace(c)) {
@@ -29,8 +35,7 @@ token_t *read_number_token(FILE *fp) {
   ungetc(c, fp);
   buf[buf_index] = 0;
 
-  token_t *token = calloc(1, sizeof(token_t));
-  token->type = TOKEN_NUMBER;
+  token_t *token = new_token(TOKEN_NUMBER);
   token->value.number = atoi(buf);
   return token;
 }
@@ -39,14 +44,17 @@ token_t *read_next_token(FILE *fp) {
   int c = read_char(fp);
 
   if (c == EOF) {
-    token_t *token = calloc(1, sizeof(token_t));
-    token->type = TOKEN_EOF;
-    return token;
+    return new_token(TOKEN_EOF);
   }
 
   if (isdigit(c)) {
     ungetc(c, fp);
     return read_number_token(fp);
+  }
+
+  switch (c) {
+  case '+':
+    return new_token(TOKEN_PLUS);
   }
 
   error("unexpected char");

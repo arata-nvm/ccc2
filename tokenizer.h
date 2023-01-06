@@ -3,6 +3,7 @@
 
 typedef enum {
   TOKEN_EOF,
+  TOKEN_PLUS,
   TOKEN_NUMBER,
 } tokentype_t;
 
@@ -14,6 +15,8 @@ typedef struct {
 
   struct token_t *next;
 } token_t;
+
+token_t *new_token(tokentype_t type);
 
 int read_char(FILE *fp);
 

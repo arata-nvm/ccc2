@@ -16,9 +16,20 @@ int main(int argc, char **argv) {
   printf(".global main\n");
   printf("main:\n");
 
-  token_t *token = read_next_token(fp);
-  if (token->type == TOKEN_NUMBER) {
-    printf("  mov x0, %d\n", token->value.number);
+  token_t *token = tokenize(fp);
+  if (token->type != TOKEN_NUMBER) {
+    error("expected TOKEN_NUMBER");
+  }
+  printf("  mov x0, %d\n", token->value.number);
+
+  token = token->next;
+  while (token->type == TOKEN_PLUS) {
+    token = token->next;
+    if (token->type != TOKEN_NUMBER) {
+      error("expected TOKEN_NUMBER");
+    }
+    printf("  add x0, x0, %d\n", token->value.number);
+    token = token->next;
   }
 
   printf("  ret\n");
