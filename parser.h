@@ -53,7 +53,6 @@ typedef enum {
   STMT_EXPR,
   STMT_RETURN,
   STMT_IF,
-  STMT_ELSE,
   STMT_WHILE,
   STMT_FOR,
 } stmttype_t;
