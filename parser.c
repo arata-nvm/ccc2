@@ -53,7 +53,7 @@ node_t *parse_number(token_cursor_t *cursor) {
 node_t *parse_primary(token_cursor_t *cursor) {
   if (peek(cursor)->type == TOKEN_PAREN_OPEN) {
     consume(cursor);
-    node_t *node = parse_add_sub(cursor);
+    node_t *node = parse_equality(cursor);
     expect(cursor, TOKEN_PAREN_CLOSE);
     return node;
   }
@@ -112,7 +112,49 @@ node_t *parse_add_sub(token_cursor_t *cursor) {
   return node;
 }
 
+node_t *parse_relational(token_cursor_t *cursor) {
+  node_t *node = parse_add_sub(cursor);
+
+  while (1) {
+    if (peek(cursor)->type == TOKEN_LT) {
+      consume(cursor);
+      node = new_binary_node(NODE_LT, node, parse_add_sub(cursor));
+    } else if (peek(cursor)->type == TOKEN_LE) {
+      consume(cursor);
+      node = new_binary_node(NODE_LE, node, parse_add_sub(cursor));
+    } else if (peek(cursor)->type == TOKEN_GT) {
+      consume(cursor);
+      node = new_binary_node(NODE_GT, node, parse_add_sub(cursor));
+    } else if (peek(cursor)->type == TOKEN_GE) {
+      consume(cursor);
+      node = new_binary_node(NODE_GE, node, parse_add_sub(cursor));
+    } else {
+      break;
+    }
+  }
+
+  return node;
+}
+
+node_t *parse_equality(token_cursor_t *cursor) {
+  node_t *node = parse_relational(cursor);
+
+  while (1) {
+    if (peek(cursor)->type == TOKEN_EQ) {
+      consume(cursor);
+      node = new_binary_node(NODE_EQ, node, parse_relational(cursor));
+    } else if (peek(cursor)->type == TOKEN_NE) {
+      consume(cursor);
+      node = new_binary_node(NODE_NE, node, parse_relational(cursor));
+    } else {
+      break;
+    }
+  }
+
+  return node;
+}
+
 node_t *parse(token_t *token) {
   token_cursor_t *cursor = new_token_cursor(token);
-  return parse_add_sub(cursor);
+  return parse_equality(cursor);
 }

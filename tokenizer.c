@@ -67,6 +67,38 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_PAREN_OPEN);
   case ')':
     return new_token(TOKEN_PAREN_CLOSE);
+  case '<': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_LE);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_LT);
+  }
+  case '>': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_GE);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_GT);
+  }
+  case '=': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_EQ);
+    }
+    ungetc(c2, fp);
+    break;
+  }
+  case '!': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_NE);
+    }
+    ungetc(c2, fp);
+    break;
+  }
   }
 
   error("unexpected char");

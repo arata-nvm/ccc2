@@ -10,6 +10,12 @@ typedef enum {
   TOKEN_REM,
   TOKEN_PAREN_OPEN,
   TOKEN_PAREN_CLOSE,
+  TOKEN_LT,
+  TOKEN_LE,
+  TOKEN_GT,
+  TOKEN_GE,
+  TOKEN_EQ,
+  TOKEN_NE,
   TOKEN_NUMBER,
 } tokentype_t;
 

@@ -46,6 +46,36 @@ void gen_node(node_t *node, FILE *fp) {
     fprintf(fp, "  msub x0, x1, x2, x0\n");
     push(fp, "x0");
     break;
+  case NODE_LT:
+    fprintf(fp, "  subs x0, x0, x1\n");
+    fprintf(fp, "  cset x0, lt\n");
+    push(fp, "x0");
+    break;
+  case NODE_LE:
+    fprintf(fp, "  subs x0, x0, x1\n");
+    fprintf(fp, "  cset x0, le\n");
+    push(fp, "x0");
+    break;
+  case NODE_GT:
+    fprintf(fp, "  subs x0, x0, x1\n");
+    fprintf(fp, "  cset x0, gt\n");
+    push(fp, "x0");
+    break;
+  case NODE_GE:
+    fprintf(fp, "  subs x0, x0, x1\n");
+    fprintf(fp, "  cset x0, ge\n");
+    push(fp, "x0");
+    break;
+  case NODE_EQ:
+    fprintf(fp, "  subs x0, x0, x1\n");
+    fprintf(fp, "  cset x0, eq\n");
+    push(fp, "x0");
+    break;
+  case NODE_NE:
+    fprintf(fp, "  subs x0, x0, x1\n");
+    fprintf(fp, "  cset x0, ne\n");
+    push(fp, "x0");
+    break;
   }
 }
 

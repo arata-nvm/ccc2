@@ -20,6 +20,12 @@ typedef enum {
   NODE_MUL,
   NODE_DIV,
   NODE_REM,
+  NODE_LT,
+  NODE_LE,
+  NODE_GT,
+  NODE_GE,
+  NODE_EQ,
+  NODE_NE,
 } nodetype_t;
 
 typedef struct _node_t node_t;
@@ -45,5 +51,9 @@ node_t *parse_unary(token_cursor_t *cursor);
 node_t *parse_mul_div(token_cursor_t *cursor);
 
 node_t *parse_add_sub(token_cursor_t *cursor);
+
+node_t *parse_relational(token_cursor_t *cursor);
+
+node_t *parse_equality(token_cursor_t *cursor);
 
 node_t *parse(token_t *token);
