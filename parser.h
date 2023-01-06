@@ -92,4 +92,21 @@ struct _stmt_list_t {
   stmt_list_t *next;
 };
 
-stmt_t *parse(token_t *token);
+typedef enum {
+  GSTMT_FUNC,
+} global_stmttype_t;
+
+typedef struct _global_stmt_t global_stmt_t;
+struct _global_stmt_t {
+  global_stmttype_t type;
+  union {
+    struct {
+      char *name;
+      stmt_t *body;
+    } func;
+  } value;
+
+  global_stmt_t *next;
+};
+
+global_stmt_t *parse(token_t *token);

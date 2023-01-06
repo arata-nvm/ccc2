@@ -114,6 +114,7 @@ void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
     }
 
     gen(ctx, "  bl %s\n", expr->value.ident);
+    gen_push(ctx, "x0");
     return;
   }
   default:
@@ -190,7 +191,7 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     break;
   case STMT_RETURN:
     gen_expr(stmt->value.ret, ctx);
-    gen(ctx, "  b .Lmain.ret\n");
+    gen(ctx, "  b .L%s.ret\n", ctx->cur_func_name);
     break;
   case STMT_IF: {
     int else_label = next_label(ctx);
@@ -198,28 +199,28 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     gen_expr(stmt->value.if_.cond, ctx);
     gen_pop(ctx, "x8");
     gen(ctx, "  subs x8, x8, 0\n");
-    gen(ctx, "  beq .Lif.%d\n", else_label);
+    gen(ctx, "  beq .L%s.if.%d\n", ctx->cur_func_name, else_label);
     gen_stmt(stmt->value.if_.then_, ctx);
     if (stmt->value.if_.else_) {
-      gen(ctx, "b .Lif.%d\n", merge_label);
+      gen(ctx, "b .L%s.if.%d\n", ctx->cur_func_name, merge_label);
     }
-    gen(ctx, ".Lif.%d:\n", else_label);
+    gen(ctx, ".L%s.if.%d:\n", ctx->cur_func_name, else_label);
     if (stmt->value.if_.else_) {
       gen_stmt(stmt->value.if_.else_, ctx);
-      gen(ctx, ".Lif.%d:\n", merge_label);
+      gen(ctx, ".L%s.if.%d:\n", ctx->cur_func_name, merge_label);
     }
     break;
   }
   case STMT_WHILE: {
     int cond_label = next_label(ctx);
     int end_label = next_label(ctx);
-    gen(ctx, ".Lwhile.%d:\n", cond_label);
+    gen(ctx, ".L%s.while.%d:\n", ctx->cur_func_name, cond_label);
     gen_expr(stmt->value.while_.cond, ctx);
     gen(ctx, "  subs x8, x8, 0\n");
-    gen(ctx, "  beq .Lwhile.%d\n", end_label);
+    gen(ctx, "  beq .L%s.while.%d\n", ctx->cur_func_name, end_label);
     gen_stmt(stmt->value.while_.body, ctx);
-    gen(ctx, "  b .Lwhile.%d\n", cond_label);
-    gen(ctx, ".Lwhile.%d:\n", end_label);
+    gen(ctx, "  b .L%s.while.%d\n", ctx->cur_func_name, cond_label);
+    gen(ctx, ".L%s.while.%d:\n", ctx->cur_func_name, end_label);
     break;
   }
   case STMT_FOR: {
@@ -228,18 +229,18 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     if (stmt->value.for_.init) {
       gen_expr(stmt->value.for_.init, ctx);
     }
-    gen(ctx, ".Lfor.%d:\n", cond_label);
+    gen(ctx, ".L%s.for.%d:\n", ctx->cur_func_name, cond_label);
     if (stmt->value.for_.cond) {
       gen_expr(stmt->value.for_.cond, ctx);
       gen(ctx, "  subs x8, x8, 0\n");
-      gen(ctx, "  beq .Lfor.%d\n", end_label);
+      gen(ctx, "  beq .L%s.for.%d\n", ctx->cur_func_name, end_label);
     }
     gen_stmt(stmt->value.for_.body, ctx);
     if (stmt->value.for_.loop) {
       gen_expr(stmt->value.for_.loop, ctx);
     }
-    gen(ctx, "  b .Lfor.%d\n", cond_label);
-    gen(ctx, ".Lfor.%d:\n", end_label);
+    gen(ctx, "  b .L%s.for.%d\n", ctx->cur_func_name, cond_label);
+    gen(ctx, ".L%s.for.%d:\n", ctx->cur_func_name, end_label);
     break;
   }
   case STMT_BLOCK: {
@@ -253,24 +254,33 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
   }
 }
 
-void gen_code(stmt_t *stmt, FILE *fp) {
+void gen_global_stmt(global_stmt_t *gstmt, codegen_ctx_t *ctx) {
+  switch (gstmt->type) {
+  case GSTMT_FUNC:
+    ctx->cur_func_name = gstmt->value.func.name;
+    gen(ctx, ".global %s\n", ctx->cur_func_name);
+    gen(ctx, "%s:\n", ctx->cur_func_name);
+    gen(ctx, "  sub sp, sp, 0x900\n"); // TODO
+    gen(ctx, "  stp x29, x30, [sp, 16]\n");
+    gen(ctx, "  mov x29, sp\n");
+
+    gen_stmt(gstmt->value.func.body, ctx);
+
+    gen(ctx, ".L%s.ret:\n", ctx->cur_func_name);
+    gen_pop(ctx, "x0");
+    gen(ctx, "  mov sp, x29\n");
+    gen(ctx, "  ldp x29, x30, [sp, 16]\n");
+    gen(ctx, "  add sp, sp, 0x900\n");
+    gen(ctx, "  ret\n");
+  }
+}
+
+void gen_code(global_stmt_t *gstmt, FILE *fp) {
   codegen_ctx_t *ctx = new_codegen_ctx(fp);
 
-  // TODO: for testing
-  gen(ctx, ".global test\ntest:\nret\n");
-
-  gen(ctx, ".global main\n");
-  gen(ctx, "main:\n");
-  gen(ctx, "  sub sp, sp, 0x900\n"); // TODO
-  gen(ctx, "  stp x29, x30, [sp, 16]\n");
-  gen(ctx, "  mov x29, sp\n");
-
-  gen_stmt(stmt, ctx);
-
-  gen(ctx, ".Lmain.ret:\n");
-  gen_pop(ctx, "x0");
-  gen(ctx, "  mov sp, x29\n");
-  gen(ctx, "  ldp x29, x30, [sp, 16]\n");
-  gen(ctx, "  add sp, sp, 0x900\n");
-  gen(ctx, "  ret\n");
+  global_stmt_t *cur = gstmt;
+  while (cur) {
+    gen_global_stmt(cur, ctx);
+    cur = cur->next;
+  }
 }

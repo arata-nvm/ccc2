@@ -15,6 +15,7 @@ typedef struct {
   variable_t *variables;
   int cur_offset;
   int cur_label;
+  char *cur_func_name;
 } codegen_ctx_t;
 
-void gen_code(stmt_t *stmt, FILE *fp);
+void gen_code(global_stmt_t *gstmt, FILE *fp);

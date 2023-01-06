@@ -72,6 +72,12 @@ stmt_list_t *new_stmt_list(stmt_t *stmt) {
   return stmt_list;
 }
 
+global_stmt_t *new_global_stmt(global_stmttype_t type) {
+  global_stmt_t *gstmt = calloc(1, sizeof(global_stmt_t));
+  gstmt->type = type;
+  return gstmt;
+}
+
 expr_t *parse_number(token_cursor_t *cursor) {
   int value = expect(cursor, TOKEN_NUMBER)->value.number;
   return new_number_expr(value);
@@ -337,7 +343,24 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
   }
 }
 
-stmt_t *parse(token_t *token) {
+global_stmt_t *parse_global_stmt(token_cursor_t *cursor) {
+  global_stmt_t *gstmt = new_global_stmt(GSTMT_FUNC);
+  gstmt->value.func.name = expect(cursor, TOKEN_IDENT)->value.ident;
+  expect(cursor, TOKEN_PAREN_OPEN);
+  expect(cursor, TOKEN_PAREN_CLOSE);
+  gstmt->value.func.body = parse_stmt(cursor);
+  return gstmt;
+}
+
+global_stmt_t *parse(token_t *token) {
   token_cursor_t *cursor = new_token_cursor(token);
-  return parse_stmt(cursor);
+
+  global_stmt_t *head = parse_global_stmt(cursor);
+  global_stmt_t *cur = head;
+  while (peek(cursor)->type != TOKEN_EOF) {
+    cur->next = parse_global_stmt(cursor);
+    cur = cur->next;
+  }
+
+  return head;
 }
