@@ -32,6 +32,12 @@ node_t *new_node(nodetype_t type) {
   return node;
 }
 
+node_t *new_number_node(int value) {
+  node_t *node = new_node(NODE_NUMBER);
+  node->value.number = value;
+  return node;
+}
+
 node_t *new_binary_node(nodetype_t type, node_t *lhs, node_t *rhs) {
   node_t *node = new_node(type);
   node->value.binary.lhs = lhs;
@@ -41,25 +47,34 @@ node_t *new_binary_node(nodetype_t type, node_t *lhs, node_t *rhs) {
 
 node_t *parse_number(token_cursor_t *cursor) {
   int value = expect(cursor, TOKEN_NUMBER)->value.number;
+  return new_number_node(value);
+}
 
-  node_t *node = new_node(NODE_NUMBER);
-  node->value.number = value;
-  return node;
+node_t *parse_unary(token_cursor_t *cursor) {
+  if (peek(cursor)->type == TOKEN_ADD) {
+    consume(cursor);
+    return parse_number(cursor);
+  } else if (peek(cursor)->type == TOKEN_SUB) {
+    consume(cursor);
+    return new_binary_node(NODE_SUB, new_number_node(0), parse_number(cursor));
+  }
+
+  return parse_number(cursor);
 }
 
 node_t *parse_mul_div(token_cursor_t *cursor) {
-  node_t *node = parse_number(cursor);
+  node_t *node = parse_unary(cursor);
 
   while (1) {
     if (peek(cursor)->type == TOKEN_MUL) {
       consume(cursor);
-      node = new_binary_node(NODE_MUL, node, parse_number(cursor));
+      node = new_binary_node(NODE_MUL, node, parse_unary(cursor));
     } else if (peek(cursor)->type == TOKEN_DIV) {
       consume(cursor);
-      node = new_binary_node(NODE_DIV, node, parse_number(cursor));
+      node = new_binary_node(NODE_DIV, node, parse_unary(cursor));
     } else if (peek(cursor)->type == TOKEN_REM) {
       consume(cursor);
-      node = new_binary_node(NODE_REM, node, parse_number(cursor));
+      node = new_binary_node(NODE_REM, node, parse_unary(cursor));
     } else {
       break;
     }

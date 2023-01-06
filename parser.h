@@ -38,6 +38,8 @@ node_t *new_node(nodetype_t type);
 
 node_t *parse_number(token_cursor_t *cursor);
 
+node_t *parse_unary(token_cursor_t *cursor);
+
 node_t *parse_mul_div(token_cursor_t *cursor);
 
 node_t *parse_add_sub(token_cursor_t *cursor);
