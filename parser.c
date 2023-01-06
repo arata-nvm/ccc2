@@ -47,13 +47,16 @@ node_t *parse_number(token_cursor_t *cursor) {
   return node;
 }
 
-node_t *parse_mul(token_cursor_t *cursor) {
+node_t *parse_mul_div(token_cursor_t *cursor) {
   node_t *node = parse_number(cursor);
 
   while (1) {
     if (peek(cursor)->type == TOKEN_MUL) {
       consume(cursor);
       node = new_binary_node(NODE_MUL, node, parse_number(cursor));
+    } else if (peek(cursor)->type == TOKEN_DIV) {
+      consume(cursor);
+      node = new_binary_node(NODE_DIV, node, parse_number(cursor));
     } else {
       break;
     }
@@ -63,15 +66,15 @@ node_t *parse_mul(token_cursor_t *cursor) {
 }
 
 node_t *parse_add_sub(token_cursor_t *cursor) {
-  node_t *node = parse_mul(cursor);
+  node_t *node = parse_mul_div(cursor);
 
   while (1) {
     if (peek(cursor)->type == TOKEN_ADD) {
       consume(cursor);
-      node = new_binary_node(NODE_ADD, node, parse_mul(cursor));
+      node = new_binary_node(NODE_ADD, node, parse_mul_div(cursor));
     } else if (peek(cursor)->type == TOKEN_SUB) {
       consume(cursor);
-      node = new_binary_node(NODE_SUB, node, parse_mul(cursor));
+      node = new_binary_node(NODE_SUB, node, parse_mul_div(cursor));
     } else {
       break;
     }

@@ -37,6 +37,10 @@ void gen_node(node_t *node, FILE *fp) {
     fprintf(fp, "  mul x0, x0, x1\n");
     push(fp, "x0");
     break;
+  case NODE_DIV:
+    fprintf(fp, "  sdiv x0, x0, x1\n");
+    push(fp, "x0");
+    break;
   }
 }
 

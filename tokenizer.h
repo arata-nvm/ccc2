@@ -6,6 +6,7 @@ typedef enum {
   TOKEN_ADD,
   TOKEN_SUB,
   TOKEN_MUL,
+  TOKEN_DIV,
   TOKEN_NUMBER,
 } tokentype_t;
 
