@@ -3,6 +3,15 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+int read_char(FILE *fp) {
+  int c = fgetc(fp);
+  while (isspace(c)) {
+    c = fgetc(fp);
+  }
+
+  return c;
+}
+
 token_t *read_number_token(FILE *fp) {
   char buf[256];
   int buf_index = 0;
@@ -27,7 +36,7 @@ token_t *read_number_token(FILE *fp) {
 }
 
 token_t *read_next_token(FILE *fp) {
-  int c = fgetc(fp);
+  int c = read_char(fp);
 
   if (c == EOF) {
     token_t *token = calloc(1, sizeof(token_t));
