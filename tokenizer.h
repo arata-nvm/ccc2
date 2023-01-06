@@ -7,14 +7,15 @@ typedef enum {
   TOKEN_NUMBER,
 } tokentype_t;
 
-typedef struct {
+typedef struct _token_t token_t;
+struct _token_t {
   tokentype_t type;
   union {
     int number;
   } value;
 
-  struct token_t *next;
-} token_t;
+  token_t *next;
+};
 
 token_t *new_token(tokentype_t type);
 

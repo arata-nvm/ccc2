@@ -18,16 +18,17 @@ typedef enum {
   NODE_ADD,
 } nodetype_t;
 
-typedef struct {
+typedef struct _node_t node_t;
+struct _node_t {
   nodetype_t type;
   union {
     int number;
     struct {
-      struct node_t *lhs;
-      struct node_t *rhs;
+      node_t *lhs;
+      node_t *rhs;
     } binary;
   } value;
-} node_t;
+};
 
 node_t *new_node(nodetype_t type);
 

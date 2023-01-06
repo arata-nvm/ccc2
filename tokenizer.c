@@ -65,8 +65,8 @@ token_t *tokenize(FILE *fp) {
   token_t *cur = head;
 
   while (cur->type != TOKEN_EOF) {
-    cur->next = (struct token_t *)read_next_token(fp);
-    cur = (token_t *)cur->next;
+    cur->next = read_next_token(fp);
+    cur = cur->next;
   }
 
   return head;
