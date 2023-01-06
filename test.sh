@@ -56,5 +56,6 @@ assert 2 "{ if (0==1) { return 1; } else { return 2; } return 3; }"
 assert 10 "{ i = 0; while (i < 10) { i = i + 1; } return i; }"
 assert 55 "{ sum = 0; for (i = 0; i <= 10; i = i + 1) { sum = sum + i; } return sum; }"
 assert 1 "{ {} return 1; }"
+assert 1 "{ test(); return 1; }"
 
 echo "OK;"

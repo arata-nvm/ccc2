@@ -79,7 +79,15 @@ expr_t *parse_primary(token_cursor_t *cursor) {
     return expr;
   } else if (peek(cursor)->type == TOKEN_IDENT) {
     char *name = consume(cursor)->value.ident;
-    return new_ident_expr(name);
+    if (peek(cursor)->type == TOKEN_PAREN_OPEN) {
+      consume(cursor);
+      expect(cursor, TOKEN_PAREN_CLOSE);
+      expr_t *expr = new_expr(EXPR_CALL);
+      expr->value.ident = name;
+      return expr;
+    } else {
+      return new_ident_expr(name);
+    }
   }
 
   return parse_number(cursor);

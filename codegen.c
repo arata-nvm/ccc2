@@ -6,6 +6,7 @@
 codegen_ctx_t *new_codegen_ctx(FILE *fp) {
   codegen_ctx_t *ctx = calloc(1, sizeof(codegen_ctx_t));
   ctx->fp = fp;
+  ctx->cur_offset = 16;
   return ctx;
 }
 
@@ -96,6 +97,9 @@ void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
     gen_pop(ctx, "x0");
     gen(ctx, "  str x0, [x1]\n");
     gen_push(ctx, "x0");
+    return;
+  case EXPR_CALL:
+    gen(ctx, "  bl %s\n", expr->value.ident);
     return;
   default:
     break;
@@ -237,9 +241,13 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
 void gen_code(stmt_t *stmt, FILE *fp) {
   codegen_ctx_t *ctx = new_codegen_ctx(fp);
 
+  // TODO: for testing
+  gen(ctx, ".global test\ntest:\nret\n");
+
   gen(ctx, ".global main\n");
   gen(ctx, "main:\n");
   gen(ctx, "  sub sp, sp, 0x100\n"); // TODO
+  gen(ctx, "  stp x29, x30, [sp, 16]\n");
   gen(ctx, "  mov x29, sp\n");
 
   gen_stmt(stmt, ctx);
@@ -247,6 +255,7 @@ void gen_code(stmt_t *stmt, FILE *fp) {
   gen(ctx, ".Lmain.ret:\n");
   gen_pop(ctx, "x0");
   gen(ctx, "  mov sp, x29\n");
+  gen(ctx, "  ldp x29, x30, [sp, 16]\n");
   gen(ctx, "  add sp, sp, 0x100\n");
   gen(ctx, "  ret\n");
 }

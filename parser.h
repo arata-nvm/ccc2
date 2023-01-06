@@ -20,6 +20,7 @@ typedef enum {
   EXPR_EQ,
   EXPR_NE,
   EXPR_ASSIGN,
+  EXPR_CALL,
 } exprtype_t;
 
 typedef struct _expr_t expr_t;
