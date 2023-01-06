@@ -12,4 +12,6 @@ typedef struct {
   } value;
 } token_t;
 
+token_t *read_number_token(FILE *fp);
+
 token_t *read_next_token(FILE *fp);
