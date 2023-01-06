@@ -1,4 +1,5 @@
 #include "error.h"
+#include "parser.h"
 #include "tokenizer.h"
 #include <stdlib.h>
 
@@ -17,6 +18,8 @@ int main(int argc, char **argv) {
   printf("main:\n");
 
   token_t *token = tokenize(fp);
+  node_t *program = parse(token);
+
   if (token->type != TOKEN_NUMBER) {
     error("expected TOKEN_NUMBER");
   }
