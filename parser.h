@@ -45,7 +45,10 @@ typedef enum {
   STMT_IF,
   STMT_WHILE,
   STMT_FOR,
+  STMT_BLOCK,
 } stmttype_t;
+
+typedef struct _stmt_list_t stmt_list_t;
 
 typedef struct _stmt_t stmt_t;
 struct _stmt_t {
@@ -68,9 +71,15 @@ struct _stmt_t {
       expr_t *loop;
       stmt_t *body;
     } for_;
+    stmt_list_t *block;
   } value;
 
   stmt_t *next;
+};
+
+struct _stmt_list_t {
+  stmt_t *stmt;
+  stmt_list_t *next;
 };
 
 stmt_t *parse(token_t *token);

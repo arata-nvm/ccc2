@@ -60,6 +60,12 @@ stmt_t *new_stmt(stmttype_t type) {
   return stmt;
 }
 
+stmt_list_t *new_stmt_list(stmt_t *stmt) {
+  stmt_list_t *stmt_list = calloc(1, sizeof(stmt_list_t));
+  stmt_list->stmt = stmt;
+  return stmt_list;
+}
+
 expr_t *parse_number(token_cursor_t *cursor) {
   int value = expect(cursor, TOKEN_NUMBER)->value.number;
   return new_number_expr(value);
@@ -252,6 +258,29 @@ stmt_t *parse_for(token_cursor_t *cursor) {
   return stmt;
 }
 
+stmt_t *parse_block(token_cursor_t *cursor) {
+  expect(cursor, TOKEN_BRACE_OPEN);
+
+  if (peek(cursor)->type == TOKEN_BRACE_CLOSE) {
+    consume(cursor);
+    stmt_t *stmt = new_stmt(STMT_BLOCK);
+    stmt->value.block = NULL;
+    return stmt;
+  }
+
+  stmt_list_t *head = new_stmt_list(parse_stmt(cursor));
+  stmt_list_t *cur = head;
+  while (peek(cursor)->type != TOKEN_BRACE_CLOSE) {
+    cur->next = new_stmt_list(parse_stmt(cursor));
+    cur = cur->next;
+  }
+  expect(cursor, TOKEN_BRACE_CLOSE);
+
+  stmt_t *stmt = new_stmt(STMT_BLOCK);
+  stmt->value.block = head;
+  return stmt;
+}
+
 stmt_t *parse_stmt(token_cursor_t *cursor) {
   stmt_t *stmt;
   switch (peek(cursor)->type) {
@@ -265,6 +294,8 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
     return parse_while(cursor);
   case TOKEN_FOR:
     return parse_for(cursor);
+  case TOKEN_BRACE_OPEN:
+    return parse_block(cursor);
   default:
     stmt = new_stmt(STMT_EXPR);
     stmt->value.expr = parse_expr(cursor);

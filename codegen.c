@@ -221,6 +221,15 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     }
     gen(ctx, "  b .Lfor.%d\n", cond_label);
     gen(ctx, ".Lfor.%d:\n", end_label);
+    break;
+  }
+  case STMT_BLOCK: {
+    stmt_list_t *cur = stmt->value.block;
+    while (cur) {
+      gen_stmt(cur->stmt, ctx);
+      cur = cur->next;
+    }
+    break;
   }
   }
 }
