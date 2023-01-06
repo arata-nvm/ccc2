@@ -54,9 +54,9 @@ expr_t *new_binary_expr(exprtype_t type, expr_t *lhs, expr_t *rhs) {
   return expr;
 }
 
-argument_t *new_argument(expr_t *arg) {
+argument_t *new_argument(expr_t *value) {
   argument_t *argument = calloc(1, sizeof(argument_t));
-  argument->arg = arg;
+  argument->value = value;
   return argument;
 }
 

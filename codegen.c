@@ -103,7 +103,7 @@ void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
     char reg_name[3];
     argument_t *cur_arg = expr->value.call.args;
     while (cur_arg) {
-      gen_expr(cur_arg->arg, ctx);
+      gen_expr(cur_arg->value, ctx);
       if (i > 7) {
         error("cannot use > 7 arguments");
       }
