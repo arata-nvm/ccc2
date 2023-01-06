@@ -27,7 +27,13 @@ token_t *read_number_token(FILE *fp) {
 }
 
 token_t *read_next_token(FILE *fp) {
-  char c = fgetc(fp);
+  int c = fgetc(fp);
+
+  if (c == EOF) {
+    token_t *token = calloc(1, sizeof(token_t));
+    token->type = TOKEN_EOF;
+    return token;
+  }
 
   if (isdigit(c)) {
     ungetc(c, fp);
@@ -35,4 +41,16 @@ token_t *read_next_token(FILE *fp) {
   }
 
   error("unexpected char");
+}
+
+token_t *tokenize(FILE *fp) {
+  token_t *head = read_next_token(fp);
+  token_t *cur = head;
+
+  while (cur->type != TOKEN_EOF) {
+    cur->next = (struct token_t *)read_next_token(fp);
+    cur = (token_t *)cur->next;
+  }
+
+  return head;
 }
