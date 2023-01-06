@@ -186,15 +186,15 @@ expr_t *parse_assign(token_cursor_t *cursor) {
 expr_t *parse_expr(token_cursor_t *cursor) { return parse_assign(cursor); }
 
 stmt_t *parse_return(token_cursor_t *cursor) {
-  expect(cursor, TOKEN_RETURN);
   stmt_t *stmt = new_stmt(STMT_RETURN);
+  expect(cursor, TOKEN_RETURN);
   stmt->value.ret = parse_expr(cursor);
   return stmt;
 }
 
 stmt_t *parse_if(token_cursor_t *cursor) {
-  expect(cursor, TOKEN_IF);
   stmt_t *stmt = new_stmt(STMT_IF);
+  expect(cursor, TOKEN_IF);
   expect(cursor, TOKEN_PAREN_OPEN);
   stmt->value.if_.cond = parse_expr(cursor);
   expect(cursor, TOKEN_PAREN_CLOSE);
@@ -209,8 +209,8 @@ stmt_t *parse_if(token_cursor_t *cursor) {
 }
 
 stmt_t *parse_while(token_cursor_t *cursor) {
-  expect(cursor, TOKEN_WHILE);
   stmt_t *stmt = new_stmt(STMT_WHILE);
+  expect(cursor, TOKEN_WHILE);
   expect(cursor, TOKEN_PAREN_OPEN);
   stmt->value.while_.cond = parse_expr(cursor);
   expect(cursor, TOKEN_PAREN_CLOSE);
@@ -255,23 +255,20 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
   case TOKEN_RETURN:
     stmt = parse_return(cursor);
     expect(cursor, TOKEN_SEMICOLON);
-    break;
+    return stmt;
   case TOKEN_IF:
-    stmt = parse_if(cursor);
-    break;
+    return parse_if(cursor);
   case TOKEN_WHILE:
-    stmt = parse_while(cursor);
-    break;
+    return parse_while(cursor);
   case TOKEN_FOR:
-    stmt = parse_for(cursor);
-    break;
+    return parse_for(cursor);
   default:
     stmt = new_stmt(STMT_EXPR);
     stmt->value.expr = parse_expr(cursor);
     expect(cursor, TOKEN_SEMICOLON);
+    return stmt;
     break;
   }
-  return stmt;
 }
 
 stmt_t *parse(token_t *token) {
