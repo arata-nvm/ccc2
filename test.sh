@@ -59,5 +59,6 @@ assert 1 "main() { {} return 1; }"
 assert 1 "test() { return 1; } main() { return test(); }"
 assert 1 "test(a) { return a; } main() { return test(1); }"
 assert 3 "test(a, b) { return a + b; } main() { return test(1, 2); }"
+assert 34 "fib(n) { if (n <= 2) { return 1; } else { return fib(n - 1) + fib(n - 2); } } main() { return fib(9); }"
 
 echo "OK;"
