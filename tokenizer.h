@@ -3,6 +3,8 @@
 
 typedef enum {
   TOKEN_EOF,
+  TOKEN_NUMBER,
+  TOKEN_IDENT,
   TOKEN_ADD,
   TOKEN_SUB,
   TOKEN_MUL,
@@ -17,7 +19,7 @@ typedef enum {
   TOKEN_EQ,
   TOKEN_NE,
   TOKEN_SEMICOLON,
-  TOKEN_NUMBER,
+  TOKEN_ASSIGN,
 } tokentype_t;
 
 typedef struct _token_t token_t;
@@ -25,6 +27,7 @@ struct _token_t {
   tokentype_t type;
   union {
     int number;
+    char *ident;
   } value;
 
   token_t *next;
@@ -33,6 +36,10 @@ struct _token_t {
 token_t *new_token(tokentype_t type);
 
 int read_char(FILE *fp);
+
+int is_ident_char(char c);
+
+token_t *read_ident_token(FILE *fp);
 
 token_t *read_number_token(FILE *fp);
 

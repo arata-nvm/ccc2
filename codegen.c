@@ -1,5 +1,7 @@
 #include "codegen.h"
 #include "error.h"
+#include <stdarg.h>
+#include <string.h>
 
 codegen_ctx_t *new_codegen_ctx(FILE *fp) {
   codegen_ctx_t *ctx = calloc(1, sizeof(codegen_ctx_t));
@@ -7,8 +9,36 @@ codegen_ctx_t *new_codegen_ctx(FILE *fp) {
   return ctx;
 }
 
-inline void gen(codegen_ctx_t *ctx, char *format, ...) {
-  fprintf(ctx->fp, format, __va_arg_pack());
+void add_variable(codegen_ctx_t *ctx, char *name, int offset) {
+  variable_t *variable = calloc(1, sizeof(variable_t));
+  variable->name = name;
+  variable->offset = offset;
+  variable->next = ctx->variables;
+  ctx->variables = variable;
+}
+
+int find_variable(codegen_ctx_t *ctx, char *name) {
+  variable_t *cur = ctx->variables;
+  while (cur) {
+    if (!strcmp(cur->name, name)) {
+      return cur->offset;
+    }
+    cur = cur->next;
+  }
+
+  return -1;
+}
+
+int next_offset(codegen_ctx_t *ctx) {
+  ctx->cur_offset += 16;
+  return ctx->cur_offset;
+}
+
+void gen(codegen_ctx_t *ctx, char *format, ...) {
+  va_list args;
+  va_start(args, format);
+  vfprintf(ctx->fp, format, args);
+  va_end(args);
 }
 
 void gen_push(codegen_ctx_t *ctx, char *reg) {
@@ -21,12 +51,49 @@ void gen_pop(codegen_ctx_t *ctx, char *reg) {
   gen(ctx, "  add sp, sp, 16\n");
 }
 
+void gen_lvalue(expr_t *expr, codegen_ctx_t *ctx) {
+  switch (expr->type) {
+  case EXPR_IDENT: {
+    char *name = expr->value.ident;
+    int offset = find_variable(ctx, name);
+    if (offset == -1) { // TODO
+      offset = next_offset(ctx);
+      add_variable(ctx, name, ctx->cur_offset);
+    }
+    gen(ctx, "  add x0, x29, %d\n", offset);
+    gen_push(ctx, "x0");
+    break;
+  }
+  default:
+    error("cannot generate lvalue");
+  }
+}
+
 void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
   switch (expr->type) {
   case EXPR_NUMBER:
     gen(ctx, "  mov x0, %d\n", expr->value.number);
     gen_push(ctx, "x0");
     return;
+  case EXPR_IDENT: {
+    int offset = find_variable(ctx, expr->value.ident);
+    if (offset == -1) {
+      error("unknown variable");
+    }
+    gen(ctx, "  ldr x0, [x29, %d]\n", offset);
+    gen_push(ctx, "x0");
+    return;
+  }
+  case EXPR_ASSIGN:
+    gen_expr(expr->value.assign.src, ctx);
+    gen_lvalue(expr->value.assign.dst, ctx);
+    gen_pop(ctx, "x1");
+    gen_pop(ctx, "x0");
+    gen(ctx, "  str x0, [x1]\n");
+    gen_push(ctx, "x0");
+    return;
+  default:
+    break;
   }
 
   // binary op
@@ -87,6 +154,8 @@ void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
     gen(ctx, "  cset x0, ne\n");
     gen_push(ctx, "x0");
     break;
+  default:
+    break;
   }
 }
 
@@ -103,13 +172,17 @@ void gen_code(stmt_t *stmt, FILE *fp) {
 
   gen(ctx, ".global main\n");
   gen(ctx, "main:\n");
+  gen(ctx, "  sub sp, sp, 0x100\n"); // TODO
+  gen(ctx, "  mov x29, sp\n");
 
   stmt_t *cur = stmt;
   while (cur) {
-    gen_stmt(cur, fp);
+    gen_stmt(cur, ctx);
     cur = cur->next;
   }
 
   gen_pop(ctx, "x0");
+  gen(ctx, "  mov sp, x29\n");
+  gen(ctx, "  add sp, sp, 0x100\n");
   gen(ctx, "  ret\n");
 }

@@ -46,5 +46,7 @@ assert 1 "0==0;"
 assert 0 "0==1;"
 assert 0 "0!=0;"
 assert 1 "0!=1;"
+assert 1 "x=1; x;"
+assert 3 "a=1; b=2; a+b;"
 
 echo "OK;"

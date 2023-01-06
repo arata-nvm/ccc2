@@ -15,6 +15,7 @@ token_t *expect(token_cursor_t *cursor, tokentype_t type);
 
 typedef enum {
   EXPR_NUMBER,
+  EXPR_IDENT,
   EXPR_ADD,
   EXPR_SUB,
   EXPR_MUL,
@@ -26,6 +27,7 @@ typedef enum {
   EXPR_GE,
   EXPR_EQ,
   EXPR_NE,
+  EXPR_ASSIGN,
 } exprtype_t;
 
 typedef struct _expr_t expr_t;
@@ -33,10 +35,15 @@ struct _expr_t {
   exprtype_t type;
   union {
     int number;
+    char *ident;
     struct {
       expr_t *lhs;
       expr_t *rhs;
     } binary;
+    struct {
+      expr_t *dst;
+      expr_t *src;
+    } assign;
   } value;
 };
 

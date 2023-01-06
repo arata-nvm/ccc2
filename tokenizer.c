@@ -2,6 +2,7 @@
 #include "error.h"
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 
 token_t *new_token(tokentype_t type) {
   token_t *token = calloc(1, sizeof(token_t));
@@ -16,6 +17,33 @@ int read_char(FILE *fp) {
   }
 
   return c;
+}
+
+int is_ident_char(char c) { return isalnum(c) || c == '_'; }
+
+token_t *read_ident_token(FILE *fp) {
+  char buf[256];
+  int buf_index = 0;
+
+  char c;
+  while (1) {
+    c = fgetc(fp);
+    if (!is_ident_char(c)) {
+      break;
+    }
+
+    buf[buf_index] = c;
+    buf_index++;
+  }
+  ungetc(c, fp);
+  buf[buf_index] = 0;
+  buf_index++;
+
+  token_t *token = new_token(TOKEN_IDENT);
+  token->value.ident = calloc(1, buf_index);
+  strncpy(token->value.ident, buf, buf_index);
+
+  return token;
 }
 
 token_t *read_number_token(FILE *fp) {
@@ -50,6 +78,11 @@ token_t *read_next_token(FILE *fp) {
   if (isdigit(c)) {
     ungetc(c, fp);
     return read_number_token(fp);
+  }
+
+  if (isalpha(c)) {
+    ungetc(c, fp);
+    return read_ident_token(fp);
   }
 
   switch (c) {
@@ -91,7 +124,7 @@ token_t *read_next_token(FILE *fp) {
       return new_token(TOKEN_EQ);
     }
     ungetc(c2, fp);
-    break;
+    return new_token(TOKEN_ASSIGN);
   }
   case '!': {
     char c2 = fgetc(fp);

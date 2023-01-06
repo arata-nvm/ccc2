@@ -38,6 +38,12 @@ expr_t *new_number_expr(int value) {
   return expr;
 }
 
+expr_t *new_ident_expr(char *name) {
+  expr_t *expr = new_expr(EXPR_IDENT);
+  expr->value.ident = name;
+  return expr;
+}
+
 expr_t *new_binary_expr(exprtype_t type, expr_t *lhs, expr_t *rhs) {
   expr_t *expr = new_expr(type);
   expr->value.binary.lhs = lhs;
@@ -62,6 +68,9 @@ expr_t *parse_primary(token_cursor_t *cursor) {
     expr_t *expr = parse_expr(cursor);
     expect(cursor, TOKEN_PAREN_CLOSE);
     return expr;
+  } else if (peek(cursor)->type == TOKEN_IDENT) {
+    char *name = consume(cursor)->value.ident;
+    return new_ident_expr(name);
   }
 
   return parse_number(cursor);
@@ -160,7 +169,21 @@ expr_t *parse_equality(token_cursor_t *cursor) {
   return expr;
 }
 
-expr_t *parse_expr(token_cursor_t *cursor) { return parse_equality(cursor); }
+expr_t *parse_assign(token_cursor_t *cursor) {
+  expr_t *expr = parse_equality(cursor);
+
+  if (peek(cursor)->type == TOKEN_ASSIGN) {
+    consume(cursor);
+    expr_t *expr2 = new_expr(EXPR_ASSIGN);
+    expr2->value.assign.dst = expr;
+    expr2->value.assign.src = parse_equality(cursor);
+    return expr2;
+  }
+
+  return expr;
+}
+
+expr_t *parse_expr(token_cursor_t *cursor) { return parse_assign(cursor); }
 
 stmt_t *parse_stmt(token_cursor_t *cursor) {
   stmt_t *stmt = new_stmt(STMT_EXPR);
