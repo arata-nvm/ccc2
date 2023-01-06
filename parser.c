@@ -2,6 +2,9 @@
 #include "error.h"
 #include <stdlib.h>
 
+expr_t *parse_expr(token_cursor_t *cursor);
+stmt_t *parse_stmt(token_cursor_t *cursor);
+
 token_cursor_t *new_token_cursor(token_t *token) {
   token_cursor_t *cursor = calloc(1, sizeof(token_cursor_t));
   cursor->cur_token = token;

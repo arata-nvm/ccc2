@@ -5,14 +5,6 @@ typedef struct {
   token_t *cur_token;
 } token_cursor_t;
 
-token_cursor_t *new_token_cursor(token_t *token);
-
-token_t *peek(token_cursor_t *cursor);
-
-token_t *consume(token_cursor_t *cursor);
-
-token_t *expect(token_cursor_t *cursor, tokentype_t type);
-
 typedef enum {
   EXPR_NUMBER,
   EXPR_IDENT,
@@ -47,8 +39,6 @@ struct _expr_t {
   } value;
 };
 
-expr_t *new_expr(exprtype_t type);
-
 typedef enum {
   STMT_EXPR,
   STMT_RETURN,
@@ -82,25 +72,5 @@ struct _stmt_t {
 
   stmt_t *next;
 };
-
-expr_t *parse_number(token_cursor_t *cursor);
-
-expr_t *parse_primary(token_cursor_t *cursor);
-
-expr_t *parse_unary(token_cursor_t *cursor);
-
-expr_t *parse_mul_div(token_cursor_t *cursor);
-
-expr_t *parse_add_sub(token_cursor_t *cursor);
-
-expr_t *parse_relational(token_cursor_t *cursor);
-
-expr_t *parse_equality(token_cursor_t *cursor);
-
-expr_t *parse_expr(token_cursor_t *token);
-
-stmt_t *parse_return(token_cursor_t *cursor);
-
-stmt_t *parse_stmt(token_cursor_t *token);
 
 stmt_t *parse(token_t *token);

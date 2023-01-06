@@ -38,18 +38,4 @@ struct _token_t {
   token_t *next;
 };
 
-token_t *new_token(tokentype_t type);
-
-int read_char(FILE *fp);
-
-int is_ident_char(char c);
-
-void replace_reserved_tokens(token_t *token);
-
-token_t *read_ident_token(FILE *fp);
-
-token_t *read_number_token(FILE *fp);
-
-token_t *read_next_token(FILE *fp);
-
 token_t *tokenize(FILE *fp);
