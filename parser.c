@@ -26,135 +26,158 @@ token_t *expect(token_cursor_t *cursor, tokentype_t type) {
   return cur_token;
 }
 
-node_t *new_node(nodetype_t type) {
-  node_t *node = calloc(1, sizeof(node_t));
-  node->type = type;
-  return node;
+expr_t *new_expr(exprtype_t type) {
+  expr_t *expr = calloc(1, sizeof(expr_t));
+  expr->type = type;
+  return expr;
 }
 
-node_t *new_number_node(int value) {
-  node_t *node = new_node(NODE_NUMBER);
-  node->value.number = value;
-  return node;
+expr_t *new_number_expr(int value) {
+  expr_t *expr = new_expr(EXPR_NUMBER);
+  expr->value.number = value;
+  return expr;
 }
 
-node_t *new_binary_node(nodetype_t type, node_t *lhs, node_t *rhs) {
-  node_t *node = new_node(type);
-  node->value.binary.lhs = lhs;
-  node->value.binary.rhs = rhs;
-  return node;
+expr_t *new_binary_expr(exprtype_t type, expr_t *lhs, expr_t *rhs) {
+  expr_t *expr = new_expr(type);
+  expr->value.binary.lhs = lhs;
+  expr->value.binary.rhs = rhs;
+  return expr;
 }
 
-node_t *parse_number(token_cursor_t *cursor) {
+stmt_t *new_stmt(stmttype_t type) {
+  stmt_t *stmt = calloc(1, sizeof(stmt_t));
+  stmt->type = type;
+  return stmt;
+}
+
+expr_t *parse_number(token_cursor_t *cursor) {
   int value = expect(cursor, TOKEN_NUMBER)->value.number;
-  return new_number_node(value);
+  return new_number_expr(value);
 }
 
-node_t *parse_primary(token_cursor_t *cursor) {
+expr_t *parse_primary(token_cursor_t *cursor) {
   if (peek(cursor)->type == TOKEN_PAREN_OPEN) {
     consume(cursor);
-    node_t *node = parse_equality(cursor);
+    expr_t *expr = parse_expr(cursor);
     expect(cursor, TOKEN_PAREN_CLOSE);
-    return node;
+    return expr;
   }
 
   return parse_number(cursor);
 }
 
-node_t *parse_unary(token_cursor_t *cursor) {
+expr_t *parse_unary(token_cursor_t *cursor) {
   if (peek(cursor)->type == TOKEN_ADD) {
     consume(cursor);
     return parse_primary(cursor);
   } else if (peek(cursor)->type == TOKEN_SUB) {
     consume(cursor);
-    return new_binary_node(NODE_SUB, new_number_node(0), parse_primary(cursor));
+    return new_binary_expr(EXPR_SUB, new_number_expr(0), parse_primary(cursor));
   }
 
   return parse_primary(cursor);
 }
 
-node_t *parse_mul_div(token_cursor_t *cursor) {
-  node_t *node = parse_unary(cursor);
+expr_t *parse_mul_div(token_cursor_t *cursor) {
+  expr_t *expr = parse_unary(cursor);
 
   while (1) {
     if (peek(cursor)->type == TOKEN_MUL) {
       consume(cursor);
-      node = new_binary_node(NODE_MUL, node, parse_unary(cursor));
+      expr = new_binary_expr(EXPR_MUL, expr, parse_unary(cursor));
     } else if (peek(cursor)->type == TOKEN_DIV) {
       consume(cursor);
-      node = new_binary_node(NODE_DIV, node, parse_unary(cursor));
+      expr = new_binary_expr(EXPR_DIV, expr, parse_unary(cursor));
     } else if (peek(cursor)->type == TOKEN_REM) {
       consume(cursor);
-      node = new_binary_node(NODE_REM, node, parse_unary(cursor));
+      expr = new_binary_expr(EXPR_REM, expr, parse_unary(cursor));
     } else {
       break;
     }
   }
 
-  return node;
+  return expr;
 }
 
-node_t *parse_add_sub(token_cursor_t *cursor) {
-  node_t *node = parse_mul_div(cursor);
+expr_t *parse_add_sub(token_cursor_t *cursor) {
+  expr_t *expr = parse_mul_div(cursor);
 
   while (1) {
     if (peek(cursor)->type == TOKEN_ADD) {
       consume(cursor);
-      node = new_binary_node(NODE_ADD, node, parse_mul_div(cursor));
+      expr = new_binary_expr(EXPR_ADD, expr, parse_mul_div(cursor));
     } else if (peek(cursor)->type == TOKEN_SUB) {
       consume(cursor);
-      node = new_binary_node(NODE_SUB, node, parse_mul_div(cursor));
+      expr = new_binary_expr(EXPR_SUB, expr, parse_mul_div(cursor));
     } else {
       break;
     }
   }
 
-  return node;
+  return expr;
 }
 
-node_t *parse_relational(token_cursor_t *cursor) {
-  node_t *node = parse_add_sub(cursor);
+expr_t *parse_relational(token_cursor_t *cursor) {
+  expr_t *expr = parse_add_sub(cursor);
 
   while (1) {
     if (peek(cursor)->type == TOKEN_LT) {
       consume(cursor);
-      node = new_binary_node(NODE_LT, node, parse_add_sub(cursor));
+      expr = new_binary_expr(EXPR_LT, expr, parse_add_sub(cursor));
     } else if (peek(cursor)->type == TOKEN_LE) {
       consume(cursor);
-      node = new_binary_node(NODE_LE, node, parse_add_sub(cursor));
+      expr = new_binary_expr(EXPR_LE, expr, parse_add_sub(cursor));
     } else if (peek(cursor)->type == TOKEN_GT) {
       consume(cursor);
-      node = new_binary_node(NODE_GT, node, parse_add_sub(cursor));
+      expr = new_binary_expr(EXPR_GT, expr, parse_add_sub(cursor));
     } else if (peek(cursor)->type == TOKEN_GE) {
       consume(cursor);
-      node = new_binary_node(NODE_GE, node, parse_add_sub(cursor));
+      expr = new_binary_expr(EXPR_GE, expr, parse_add_sub(cursor));
     } else {
       break;
     }
   }
 
-  return node;
+  return expr;
 }
 
-node_t *parse_equality(token_cursor_t *cursor) {
-  node_t *node = parse_relational(cursor);
+expr_t *parse_equality(token_cursor_t *cursor) {
+  expr_t *expr = parse_relational(cursor);
 
   while (1) {
     if (peek(cursor)->type == TOKEN_EQ) {
       consume(cursor);
-      node = new_binary_node(NODE_EQ, node, parse_relational(cursor));
+      expr = new_binary_expr(EXPR_EQ, expr, parse_relational(cursor));
     } else if (peek(cursor)->type == TOKEN_NE) {
       consume(cursor);
-      node = new_binary_node(NODE_NE, node, parse_relational(cursor));
+      expr = new_binary_expr(EXPR_NE, expr, parse_relational(cursor));
     } else {
       break;
     }
   }
 
-  return node;
+  return expr;
 }
 
-node_t *parse(token_t *token) {
+expr_t *parse_expr(token_cursor_t *cursor) { return parse_equality(cursor); }
+
+stmt_t *parse_stmt(token_cursor_t *cursor) {
+  stmt_t *stmt = new_stmt(STMT_EXPR);
+  stmt->value.expr = parse_expr(cursor);
+  expect(cursor, TOKEN_SEMICOLON);
+  return stmt;
+}
+
+stmt_t *parse(token_t *token) {
   token_cursor_t *cursor = new_token_cursor(token);
-  return parse_equality(cursor);
+  stmt_t *head = parse_stmt(cursor);
+  stmt_t *cur = head;
+
+  while (peek(cursor)->type != TOKEN_EOF) {
+    cur->next = parse_stmt(cursor);
+    cur = cur->next;
+  }
+
+  return head;
 }

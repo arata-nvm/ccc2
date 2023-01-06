@@ -67,6 +67,8 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_PAREN_OPEN);
   case ')':
     return new_token(TOKEN_PAREN_CLOSE);
+  case ';':
+    return new_token(TOKEN_SEMICOLON);
   case '<': {
     char c2 = fgetc(fp);
     if (c2 == '=') {

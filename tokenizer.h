@@ -16,6 +16,7 @@ typedef enum {
   TOKEN_GE,
   TOKEN_EQ,
   TOKEN_NE,
+  TOKEN_SEMICOLON,
   TOKEN_NUMBER,
 } tokentype_t;
 

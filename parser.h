@@ -14,46 +14,64 @@ token_t *consume(token_cursor_t *cursor);
 token_t *expect(token_cursor_t *cursor, tokentype_t type);
 
 typedef enum {
-  NODE_NUMBER,
-  NODE_ADD,
-  NODE_SUB,
-  NODE_MUL,
-  NODE_DIV,
-  NODE_REM,
-  NODE_LT,
-  NODE_LE,
-  NODE_GT,
-  NODE_GE,
-  NODE_EQ,
-  NODE_NE,
-} nodetype_t;
+  EXPR_NUMBER,
+  EXPR_ADD,
+  EXPR_SUB,
+  EXPR_MUL,
+  EXPR_DIV,
+  EXPR_REM,
+  EXPR_LT,
+  EXPR_LE,
+  EXPR_GT,
+  EXPR_GE,
+  EXPR_EQ,
+  EXPR_NE,
+} exprtype_t;
 
-typedef struct _node_t node_t;
-struct _node_t {
-  nodetype_t type;
+typedef struct _expr_t expr_t;
+struct _expr_t {
+  exprtype_t type;
   union {
     int number;
     struct {
-      node_t *lhs;
-      node_t *rhs;
+      expr_t *lhs;
+      expr_t *rhs;
     } binary;
   } value;
 };
 
-node_t *new_node(nodetype_t type);
+expr_t *new_expr(exprtype_t type);
 
-node_t *parse_number(token_cursor_t *cursor);
+typedef enum {
+  STMT_EXPR,
+} stmttype_t;
 
-node_t *parse_primary(token_cursor_t *cursor);
+typedef struct _stmt_t stmt_t;
+struct _stmt_t {
+  stmttype_t type;
+  union {
+    expr_t *expr;
+  } value;
 
-node_t *parse_unary(token_cursor_t *cursor);
+  stmt_t *next;
+};
 
-node_t *parse_mul_div(token_cursor_t *cursor);
+expr_t *parse_number(token_cursor_t *cursor);
 
-node_t *parse_add_sub(token_cursor_t *cursor);
+expr_t *parse_primary(token_cursor_t *cursor);
 
-node_t *parse_relational(token_cursor_t *cursor);
+expr_t *parse_unary(token_cursor_t *cursor);
 
-node_t *parse_equality(token_cursor_t *cursor);
+expr_t *parse_mul_div(token_cursor_t *cursor);
 
-node_t *parse(token_t *token);
+expr_t *parse_add_sub(token_cursor_t *cursor);
+
+expr_t *parse_relational(token_cursor_t *cursor);
+
+expr_t *parse_equality(token_cursor_t *cursor);
+
+expr_t *parse_expr(token_cursor_t *token);
+
+stmt_t *parse_stmt(token_cursor_t *token);
+
+stmt_t *parse(token_t *token);
