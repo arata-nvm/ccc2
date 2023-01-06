@@ -78,7 +78,7 @@ stmt_list_t *new_stmt_list(stmt_t *stmt) {
   return stmt_list;
 }
 
-argument_t *new_parameter(char *name) {
+parameter_t *new_parameter(char *name) {
   parameter_t *parameter = calloc(1, sizeof(parameter_t));
   parameter->name = name;
   return parameter;
