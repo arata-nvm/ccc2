@@ -2,8 +2,14 @@
 #include "parser.h"
 #include <stdio.h>
 
-void gen_expr(expr_t *expr, FILE *fp);
+typedef struct {
+  FILE *fp;
+} codegen_ctx_t;
 
-void gen_stmt(stmt_t *stmt, FILE *fp);
+codegen_ctx_t *new_codegen_ctx(FILE *fp);
+
+void gen_expr(expr_t *expr, codegen_ctx_t *ctx);
+
+void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx);
 
 void gen_code(stmt_t *stmt, FILE *fp);
