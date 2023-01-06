@@ -3,7 +3,7 @@
 
 typedef enum {
   TOKEN_EOF,
-  TOKEN_PLUS,
+  TOKEN_ADD,
   TOKEN_NUMBER,
 } tokentype_t;
 

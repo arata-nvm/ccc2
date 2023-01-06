@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   printf("  mov x0, %d\n", token->value.number);
 
   token = token->next;
-  while (token->type == TOKEN_PLUS) {
+  while (token->type == TOKEN_ADD) {
     token = token->next;
     if (token->type != TOKEN_NUMBER) {
       error("expected TOKEN_NUMBER");
