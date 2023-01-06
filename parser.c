@@ -145,6 +145,12 @@ expr_t *parse_unary(token_cursor_t *cursor) {
   case TOKEN_SUB:
     consume(cursor);
     return new_binary_expr(EXPR_SUB, new_number_expr(0), parse_primary(cursor));
+  case TOKEN_REF:
+    consume(cursor);
+    return new_unary_expr(EXPR_REF, parse_primary(cursor));
+  case TOKEN_MUL:
+    consume(cursor);
+    return new_unary_expr(EXPR_DEREF, parse_primary(cursor));
   default:
     return parse_primary(cursor);
   }

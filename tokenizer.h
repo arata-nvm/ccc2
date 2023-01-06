@@ -28,6 +28,7 @@ typedef enum {
   TOKEN_WHILE,
   TOKEN_FOR,
   TOKEN_COMMA,
+  TOKEN_REF,
 } tokentype_t;
 
 typedef struct _token_t token_t;

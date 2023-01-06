@@ -3,6 +3,9 @@
 #include <stdarg.h>
 #include <string.h>
 
+void gen_expr(expr_t *expr, codegen_ctx_t *ctx);
+void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx);
+
 codegen_ctx_t *new_codegen_ctx(FILE *fp) {
   codegen_ctx_t *ctx = calloc(1, sizeof(codegen_ctx_t));
   ctx->fp = fp;
@@ -76,6 +79,9 @@ void gen_lvalue(expr_t *expr, codegen_ctx_t *ctx) {
     gen(ctx, "  add x8, x29, %d\n", offset);
     gen_push(ctx, "x8");
     break;
+  case EXPR_DEREF:
+    gen_expr(expr->value.unary, ctx);
+    break;
   }
   default:
     error("cannot generate lvalue");
@@ -124,6 +130,21 @@ void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
     gen_push(ctx, "x0");
     return;
   }
+  default:
+    break;
+  }
+
+  // unary op
+  switch (expr->type) {
+  case EXPR_REF:
+    gen_lvalue(expr->value.unary, ctx);
+    return;
+  case EXPR_DEREF:
+    gen_expr(expr->value.unary, ctx);
+    gen_pop(ctx, "x8");
+    gen(ctx, "  ldr x8, [x8]\n");
+    gen_push(ctx, "x8");
+    return;
   default:
     break;
   }

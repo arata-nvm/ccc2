@@ -21,6 +21,8 @@ typedef enum {
   EXPR_NE,
   EXPR_ASSIGN,
   EXPR_CALL,
+  EXPR_REF,
+  EXPR_DEREF,
 } exprtype_t;
 
 typedef struct _argument_t argument_t;
@@ -31,6 +33,7 @@ struct _expr_t {
   union {
     int number;
     char *ident;
+    expr_t *unary;
     struct {
       expr_t *lhs;
       expr_t *rhs;
