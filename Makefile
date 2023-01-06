@@ -1,5 +1,5 @@
 TARGET = ccc
-OBJS = main.o parser.o tokenizer.o
+OBJS = codegen.o main.o parser.o tokenizer.o
 
 CC = gcc
 CFLAGS = -Wall -g -std=c17

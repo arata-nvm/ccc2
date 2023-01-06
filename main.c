@@ -1,3 +1,4 @@
+#include "codegen.h"
 #include "error.h"
 #include "parser.h"
 #include "tokenizer.h"
@@ -14,28 +15,9 @@ int main(int argc, char **argv) {
     error("failed to open file");
   }
 
-  printf(".global main\n");
-  printf("main:\n");
-
   token_t *token = tokenize(fp);
-  node_t *program = parse(token);
-
-  if (token->type != TOKEN_NUMBER) {
-    error("expected TOKEN_NUMBER");
-  }
-  printf("  mov x0, %d\n", token->value.number);
-
-  token = token->next;
-  while (token->type == TOKEN_ADD) {
-    token = token->next;
-    if (token->type != TOKEN_NUMBER) {
-      error("expected TOKEN_NUMBER");
-    }
-    printf("  add x0, x0, %d\n", token->value.number);
-    token = token->next;
-  }
-
-  printf("  ret\n");
+  node_t *node = parse(token);
+  gen_code(node, stdout);
 
   return 0;
 }
