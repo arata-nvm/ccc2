@@ -26,5 +26,6 @@ assert 1 2-1
 assert 2 4-3+2-1
 assert 13 1+3*4
 assert 27 4*6+6/2
+assert 1 3%2
 
 echo "OK"

@@ -57,6 +57,9 @@ node_t *parse_mul_div(token_cursor_t *cursor) {
     } else if (peek(cursor)->type == TOKEN_DIV) {
       consume(cursor);
       node = new_binary_node(NODE_DIV, node, parse_number(cursor));
+    } else if (peek(cursor)->type == TOKEN_REM) {
+      consume(cursor);
+      node = new_binary_node(NODE_REM, node, parse_number(cursor));
     } else {
       break;
     }

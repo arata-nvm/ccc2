@@ -41,6 +41,11 @@ void gen_node(node_t *node, FILE *fp) {
     fprintf(fp, "  sdiv x0, x0, x1\n");
     push(fp, "x0");
     break;
+  case NODE_REM:
+    fprintf(fp, "  sdiv x2, x0, x1\n");
+    fprintf(fp, "  msub x0, x1, x2, x0\n");
+    push(fp, "x0");
+    break;
   }
 }
 

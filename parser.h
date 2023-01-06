@@ -19,6 +19,7 @@ typedef enum {
   NODE_SUB,
   NODE_MUL,
   NODE_DIV,
+  NODE_REM,
 } nodetype_t;
 
 typedef struct _node_t node_t;
