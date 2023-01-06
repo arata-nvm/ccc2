@@ -17,6 +17,7 @@ typedef enum {
   NODE_NUMBER,
   NODE_ADD,
   NODE_SUB,
+  NODE_MUL,
 } nodetype_t;
 
 typedef struct _node_t node_t;
@@ -34,6 +35,8 @@ struct _node_t {
 node_t *new_node(nodetype_t type);
 
 node_t *parse_number(token_cursor_t *cursor);
+
+node_t *parse_mul(token_cursor_t *cursor);
 
 node_t *parse_add_sub(token_cursor_t *cursor);
 

@@ -33,6 +33,10 @@ void gen_node(node_t *node, FILE *fp) {
     fprintf(fp, "  sub x0, x0, x1\n");
     push(fp, "x0");
     break;
+  case NODE_MUL:
+    fprintf(fp, "  mul x0, x0, x1\n");
+    push(fp, "x0");
+    break;
   }
 }
 
