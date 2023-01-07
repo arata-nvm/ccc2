@@ -264,6 +264,7 @@ stmt_t *parse_return(token_cursor_t *cursor) {
   stmt_t *stmt = new_stmt(STMT_RETURN);
   expect(cursor, TOKEN_RETURN);
   stmt->value.ret = parse_expr(cursor);
+  expect(cursor, TOKEN_SEMICOLON);
   return stmt;
 }
 
@@ -351,9 +352,7 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
   stmt_t *stmt;
   switch (peek(cursor)->type) {
   case TOKEN_RETURN:
-    stmt = parse_return(cursor);
-    expect(cursor, TOKEN_SEMICOLON);
-    return stmt;
+    return parse_return(cursor);
   case TOKEN_IF:
     return parse_if(cursor);
   case TOKEN_WHILE:
