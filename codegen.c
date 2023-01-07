@@ -255,7 +255,7 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     int cond_label = next_label(ctx);
     int end_label = next_label(ctx);
     if (stmt->value.for_.init) {
-      gen_expr(stmt->value.for_.init, ctx);
+      gen_stmt(stmt->value.for_.init, ctx);
     }
     gen(ctx, ".L%s.for.%d:\n", ctx->cur_func_name, cond_label);
     if (stmt->value.for_.cond) {

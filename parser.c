@@ -298,12 +298,12 @@ stmt_t *parse_for(token_cursor_t *cursor) {
   expect(cursor, TOKEN_FOR);
   expect(cursor, TOKEN_PAREN_OPEN);
 
+  // TODO
   if (peek(cursor)->type != TOKEN_SEMICOLON) {
-    stmt->value.for_.init = parse_expr(cursor);
+    stmt->value.for_.init = parse_stmt(cursor);
   } else {
     stmt->value.for_.init = NULL;
   }
-  expect(cursor, TOKEN_SEMICOLON);
 
   if (peek(cursor)->type != TOKEN_SEMICOLON) {
     stmt->value.for_.cond = parse_expr(cursor);
