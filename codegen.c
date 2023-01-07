@@ -58,13 +58,11 @@ void gen(codegen_ctx_t *ctx, char *format, ...) {
 }
 
 void gen_push(codegen_ctx_t *ctx, char *reg) {
-  gen(ctx, "  sub sp, sp, 16\n");
-  gen(ctx, "  str %s, [sp, 16]\n", reg);
+  gen(ctx, "  str %s, [sp, -16]!\n", reg);
 }
 
 void gen_pop(codegen_ctx_t *ctx, char *reg) {
-  gen(ctx, "  ldr %s, [sp, 16]\n", reg);
-  gen(ctx, "  add sp, sp, 16\n");
+  gen(ctx, "  ldr %s, [sp], 16\n", reg);
 }
 
 void gen_lvalue(expr_t *expr, codegen_ctx_t *ctx) {
