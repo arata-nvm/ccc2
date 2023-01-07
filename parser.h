@@ -1,5 +1,6 @@
 #pragma once
 #include "tokenizer.h"
+#include "type.h"
 
 typedef struct {
   token_t *cur_token;
@@ -26,8 +27,13 @@ typedef enum {
 } exprtype_t;
 
 typedef struct _argument_t argument_t;
-
 typedef struct _expr_t expr_t;
+
+struct _argument_t {
+  expr_t *value;
+  argument_t *next;
+};
+
 struct _expr_t {
   exprtype_t type;
   union {
@@ -49,11 +55,6 @@ struct _expr_t {
   } value;
 };
 
-struct _argument_t {
-  expr_t *value;
-  argument_t *next;
-};
-
 typedef enum {
   STMT_EXPR,
   STMT_RETURN,
@@ -65,8 +66,13 @@ typedef enum {
 } stmttype_t;
 
 typedef struct _stmt_list_t stmt_list_t;
-
 typedef struct _stmt_t stmt_t;
+
+struct _stmt_list_t {
+  stmt_t *stmt;
+  stmt_list_t *next;
+};
+
 struct _stmt_t {
   stmttype_t type;
   union {
@@ -89,15 +95,11 @@ struct _stmt_t {
     } for_;
     stmt_list_t *block;
     struct {
+      type_t *type;
       char *name;
       expr_t *value;
     } define;
   } value;
-};
-
-struct _stmt_list_t {
-  stmt_t *stmt;
-  stmt_list_t *next;
 };
 
 typedef enum {
@@ -105,16 +107,18 @@ typedef enum {
 } global_stmttype_t;
 
 typedef struct _parameter_t parameter_t;
+typedef struct _global_stmt_t global_stmt_t;
+
 struct _parameter_t {
   char *name;
   parameter_t *next;
 };
 
-typedef struct _global_stmt_t global_stmt_t;
 struct _global_stmt_t {
   global_stmttype_t type;
   union {
     struct {
+      type_t *ret_type;
       char *name;
       parameter_t *params;
       stmt_t *body;

@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "error.h"
+#include "type.h"
 #include <stdlib.h>
 
 expr_t *parse_expr(token_cursor_t *cursor);
@@ -348,9 +349,14 @@ stmt_t *parse_block(token_cursor_t *cursor) {
   return stmt;
 }
 
+type_t *parse_type(token_cursor_t *cursor) {
+  expect(cursor, TOKEN_INT);
+  return new_type(TYPE_INT);
+}
+
 stmt_t *parse_define(token_cursor_t *cursor) {
   stmt_t *stmt = new_stmt(STMT_DEFINE);
-  expect(cursor, TOKEN_INT);
+  stmt->value.define.type = parse_type(cursor);
   stmt->value.define.name = expect(cursor, TOKEN_IDENT)->value.ident;
   if (peek(cursor)->type == TOKEN_ASSIGN) {
     consume(cursor);
@@ -409,7 +415,7 @@ parameter_t *parse_parameter(token_cursor_t *cursor) {
 
 global_stmt_t *parse_global_stmt(token_cursor_t *cursor) {
   global_stmt_t *gstmt = new_global_stmt(GSTMT_FUNC);
-  expect(cursor, TOKEN_INT);
+  gstmt->value.func.ret_type = parse_type(cursor);
   gstmt->value.func.name = expect(cursor, TOKEN_IDENT)->value.ident;
   expect(cursor, TOKEN_PAREN_OPEN);
   gstmt->value.func.params = parse_parameter(cursor);
