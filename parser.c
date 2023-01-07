@@ -22,6 +22,14 @@ token_t *consume(token_cursor_t *cursor) {
   return cur_token;
 }
 
+token_t *consume_if(token_cursor_t *cursor, tokentype_t type) {
+  if (peek(cursor)->type == type) {
+    return consume(cursor);
+  }
+
+  return NULL;
+}
+
 token_t *expect(token_cursor_t *cursor, tokentype_t type) {
   token_t *cur_token = consume(cursor);
   if (cur_token->type != type) {
@@ -122,8 +130,7 @@ expr_t *parse_primary(token_cursor_t *cursor) {
     return expr;
   case TOKEN_IDENT: {
     char *name = consume(cursor)->value.ident;
-    if (peek(cursor)->type == TOKEN_PAREN_OPEN) {
-      consume(cursor);
+    if (consume_if(cursor, TOKEN_PAREN_OPEN)) {
       expr_t *expr = new_expr(EXPR_CALL);
       expr->value.call.name = name;
       expr->value.call.args = parse_arguments(cursor);
@@ -248,8 +255,7 @@ expr_t *parse_equality(token_cursor_t *cursor) {
 expr_t *parse_assign(token_cursor_t *cursor) {
   expr_t *expr = parse_equality(cursor);
 
-  if (peek(cursor)->type == TOKEN_ASSIGN) {
-    consume(cursor);
+  if (consume_if(cursor, TOKEN_ASSIGN)) {
     expr_t *expr2 = new_expr(EXPR_ASSIGN);
     expr2->value.assign.dst = expr;
     expr2->value.assign.src = parse_equality(cursor);
@@ -276,8 +282,7 @@ stmt_t *parse_if(token_cursor_t *cursor) {
   stmt->value.if_.cond = parse_expr(cursor);
   expect(cursor, TOKEN_PAREN_CLOSE);
   stmt->value.if_.then_ = parse_stmt(cursor);
-  if (peek(cursor)->type == TOKEN_ELSE) {
-    consume(cursor);
+  if (consume_if(cursor, TOKEN_ELSE)) {
     stmt->value.if_.else_ = parse_stmt(cursor);
   } else {
     stmt->value.if_.else_ = NULL;
@@ -329,8 +334,7 @@ stmt_t *parse_for(token_cursor_t *cursor) {
 stmt_t *parse_block(token_cursor_t *cursor) {
   expect(cursor, TOKEN_BRACE_OPEN);
 
-  if (peek(cursor)->type == TOKEN_BRACE_CLOSE) {
-    consume(cursor);
+  if (consume_if(cursor, TOKEN_BRACE_CLOSE)) {
     stmt_t *stmt = new_stmt(STMT_BLOCK);
     stmt->value.block = NULL;
     return stmt;
@@ -358,8 +362,7 @@ stmt_t *parse_define(token_cursor_t *cursor) {
   stmt_t *stmt = new_stmt(STMT_DEFINE);
   stmt->value.define.type = parse_type(cursor);
   stmt->value.define.name = expect(cursor, TOKEN_IDENT)->value.ident;
-  if (peek(cursor)->type == TOKEN_ASSIGN) {
-    consume(cursor);
+  if (consume_if(cursor, TOKEN_ASSIGN)) {
     stmt->value.define.value = parse_expr(cursor);
   } else {
     stmt->value.define.value = NULL;
