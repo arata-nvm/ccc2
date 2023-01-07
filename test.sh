@@ -61,6 +61,6 @@ assert 1 "int test(int a) { return a; } int main() { return test(1); }"
 assert 3 "int test(int a, int b) { return a + b; } int main() { return test(1, 2); }"
 assert 34 "int fib(int n) { if (n <= 2) { return 1; } else { return fib(n - 1) + fib(n - 2); } } int main() { return fib(9); }"
 assert 1 "int main() { int a = 1; int b = &a; return *b; }"
-assert 2 "int main() { int a = 1; int b = &a; *b = 2; return a; }"
+assert 2 "int main() { int a = 1; int *b = &a; *b = 2; return a; }"
 
 echo "OK"

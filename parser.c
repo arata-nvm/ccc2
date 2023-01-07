@@ -355,7 +355,13 @@ stmt_t *parse_block(token_cursor_t *cursor) {
 
 type_t *parse_type(token_cursor_t *cursor) {
   expect(cursor, TOKEN_INT);
-  return new_type(TYPE_INT);
+  type_t *type = new_type(TYPE_INT);
+
+  while (consume_if(cursor, TOKEN_MUL)) {
+    type = ptr_to(type);
+  }
+
+  return type;
 }
 
 stmt_t *parse_define(token_cursor_t *cursor) {
