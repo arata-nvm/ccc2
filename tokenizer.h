@@ -29,6 +29,7 @@ typedef enum {
   TOKEN_FOR,
   TOKEN_COMMA,
   TOKEN_REF,
+  TOKEN_INT,
 } tokentype_t;
 
 typedef struct _token_t token_t;

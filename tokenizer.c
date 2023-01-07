@@ -37,6 +37,8 @@ void replace_reserved_tokens(token_t *token) {
     token->type = TOKEN_WHILE;
   } else if (!strcmp(ident, "for")) {
     token->type = TOKEN_FOR;
+  } else if (!strcmp(ident, "int")) {
+    token->type = TOKEN_INT;
   }
 }
 

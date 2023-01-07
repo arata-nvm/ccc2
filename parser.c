@@ -348,6 +348,20 @@ stmt_t *parse_block(token_cursor_t *cursor) {
   return stmt;
 }
 
+stmt_t *parse_define(token_cursor_t *cursor) {
+  stmt_t *stmt = new_stmt(STMT_DEFINE);
+  expect(cursor, TOKEN_INT);
+  stmt->value.define.name = expect(cursor, TOKEN_IDENT)->value.ident;
+  if (peek(cursor)->type == TOKEN_ASSIGN) {
+    consume(cursor);
+    stmt->value.define.value = parse_expr(cursor);
+  } else {
+    stmt->value.define.value = NULL;
+  }
+  expect(cursor, TOKEN_SEMICOLON);
+  return stmt;
+}
+
 stmt_t *parse_stmt(token_cursor_t *cursor) {
   stmt_t *stmt;
   switch (peek(cursor)->type) {
@@ -361,6 +375,8 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
     return parse_for(cursor);
   case TOKEN_BRACE_OPEN:
     return parse_block(cursor);
+  case TOKEN_INT:
+    return parse_define(cursor);
   default:
     stmt = new_stmt(STMT_EXPR);
     stmt->value.expr = parse_expr(cursor);
@@ -375,12 +391,14 @@ parameter_t *parse_parameter(token_cursor_t *cursor) {
     return NULL;
   }
 
+  expect(cursor, TOKEN_INT);
   char *name = expect(cursor, TOKEN_IDENT)->value.ident;
   parameter_t *head = new_parameter(name);
   parameter_t *cur = head;
 
   while (peek(cursor)->type == TOKEN_COMMA) {
     expect(cursor, TOKEN_COMMA);
+    expect(cursor, TOKEN_INT);
     name = expect(cursor, TOKEN_IDENT)->value.ident;
     cur->next = new_parameter(name);
     cur = cur->next;
@@ -391,6 +409,7 @@ parameter_t *parse_parameter(token_cursor_t *cursor) {
 
 global_stmt_t *parse_global_stmt(token_cursor_t *cursor) {
   global_stmt_t *gstmt = new_global_stmt(GSTMT_FUNC);
+  expect(cursor, TOKEN_INT);
   gstmt->value.func.name = expect(cursor, TOKEN_IDENT)->value.ident;
   expect(cursor, TOKEN_PAREN_OPEN);
   gstmt->value.func.params = parse_parameter(cursor);

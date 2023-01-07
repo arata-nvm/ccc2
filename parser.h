@@ -61,6 +61,7 @@ typedef enum {
   STMT_WHILE,
   STMT_FOR,
   STMT_BLOCK,
+  STMT_DEFINE,
 } stmttype_t;
 
 typedef struct _stmt_list_t stmt_list_t;
@@ -81,12 +82,16 @@ struct _stmt_t {
       stmt_t *body;
     } while_;
     struct {
-      expr_t *init;
+      stmt_t *init;
       expr_t *cond;
       expr_t *loop;
       stmt_t *body;
     } for_;
     stmt_list_t *block;
+    struct {
+      char *name;
+      expr_t *value;
+    } define;
   } value;
 };
 
