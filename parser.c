@@ -158,7 +158,7 @@ expr_t *parse_unary(token_cursor_t *cursor) {
     return new_unary_expr(EXPR_REF, parse_primary(cursor));
   case TOKEN_MUL:
     consume(cursor);
-    return new_unary_expr(EXPR_DEREF, parse_primary(cursor));
+    return new_unary_expr(EXPR_DEREF, parse_unary(cursor));
   default:
     return parse_primary(cursor);
   }
