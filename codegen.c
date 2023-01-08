@@ -28,9 +28,9 @@ variable_t *add_variable(codegen_ctx_t *ctx, type_t *type, char *name) {
   variable->type = type;
   variable->name = name;
 
-  int offset = align_to(ctx->cur_offset + type_size(type), type_align(type));
-  ctx->cur_offset = offset;
-  variable->offset = offset;
+  variable->offset = ctx->cur_offset;
+  ctx->cur_offset =
+      align_to(ctx->cur_offset + type_size(type), type_align(type));
 
   variable->next = ctx->variables;
   ctx->variables = variable;
