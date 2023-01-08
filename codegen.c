@@ -50,6 +50,17 @@ variable_t *find_variable(codegen_ctx_t *ctx, char *name) {
   return NULL;
 }
 
+int add_string(codegen_ctx_t *ctx, char *string) {
+  string_t *str = calloc(1, sizeof(string_t));
+  str->string = string;
+
+  str->next = ctx->strings;
+  ctx->strings = str;
+
+  ctx->cur_string++;
+  return ctx->cur_string;
+}
+
 int next_label(codegen_ctx_t *ctx) {
   ctx->cur_label++;
   return ctx->cur_label;
@@ -119,6 +130,12 @@ void gen_var_addr(codegen_ctx_t *ctx, variable_t *var) {
   gen_push(ctx, "x8");
 }
 
+void gen_str_addr(codegen_ctx_t *ctx, int str_index) {
+  gen(ctx, "  adrp x8, .L.str.%d\n", str_index);
+  gen(ctx, "  add x8, x8, :lo12:.L.str.%d\n", str_index);
+  gen_push(ctx, "x8");
+}
+
 void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_IDENT: {
@@ -141,6 +158,8 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_NUMBER:
     return new_type(TYPE_INT);
+  case EXPR_STRING:
+    return ptr_to(new_type(TYPE_CHAR));
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var == NULL) {
@@ -207,6 +226,11 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen(ctx, "  mov x8, %d\n", expr->value.number);
     gen_push(ctx, "x8");
     return;
+  case EXPR_STRING: {
+    int str_index = add_string(ctx, expr->value.string);
+    gen_str_addr(ctx, str_index);
+    return;
+  }
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var == NULL) {
@@ -497,12 +521,30 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
   }
 }
 
-void gen_code(global_stmt_t *gstmt, FILE *fp) {
-  codegen_ctx_t *ctx = new_codegen_ctx(fp);
-
+void gen_text(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
   global_stmt_t *cur = gstmt;
   while (cur) {
     gen_global_stmt(ctx, cur);
     cur = cur->next;
   }
+}
+
+void gen_data(codegen_ctx_t *ctx) {
+  string_t *cur = ctx->strings;
+  int str_index = ctx->cur_string;
+
+  while (cur) {
+    gen(ctx, ".L.str.%d:\n", str_index);
+    gen(ctx, "  .string \"%s\\0\"\n", cur->string);
+
+    cur = cur->next;
+    str_index--;
+  }
+}
+
+void gen_code(global_stmt_t *gstmt, FILE *fp) {
+  codegen_ctx_t *ctx = new_codegen_ctx(fp);
+
+  gen_text(ctx, gstmt);
+  gen_data(ctx);
 }

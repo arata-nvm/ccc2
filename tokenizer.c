@@ -95,6 +95,33 @@ token_t *read_number_token(FILE *fp) {
   return token;
 }
 
+token_t *read_string_token(FILE *fp) {
+  char buf[256];
+  int buf_index = 0;
+
+  int c;
+  while (1) {
+    c = fgetc(fp);
+    if (c == EOF) {
+      panic("missing terminating '\"'\n");
+    }
+    if (c == '"') {
+      break;
+    }
+
+    buf[buf_index] = c;
+    buf_index++;
+  }
+  buf[buf_index] = 0;
+  buf_index++;
+
+  token_t *token = new_token(TOKEN_STRING);
+  token->value.ident = calloc(1, buf_index);
+  strncpy(token->value.string, buf, buf_index);
+
+  return token;
+}
+
 token_t *read_next_token(FILE *fp) {
   int c = read_char(fp);
 
@@ -110,6 +137,10 @@ token_t *read_next_token(FILE *fp) {
   if (isalpha(c)) {
     ungetc(c, fp);
     return read_ident_token(fp);
+  }
+
+  if (c == '"') {
+    return read_string_token(fp);
   }
 
   switch (c) {

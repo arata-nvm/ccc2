@@ -8,6 +8,7 @@ typedef struct {
 
 typedef enum {
   EXPR_NUMBER,
+  EXPR_STRING,
   EXPR_IDENT,
   EXPR_ADD,
   EXPR_SUB,
@@ -39,6 +40,7 @@ struct _expr_t {
   exprtype_t type;
   union {
     int number;
+    char *string;
     char *ident;
     expr_t *unary;
     struct {

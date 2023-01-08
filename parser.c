@@ -50,6 +50,12 @@ expr_t *new_number_expr(int value) {
   return expr;
 }
 
+expr_t *new_string_expr(char *string) {
+  expr_t *expr = new_expr(EXPR_STRING);
+  expr->value.string = string;
+  return expr;
+}
+
 expr_t *new_ident_expr(char *name) {
   expr_t *expr = new_expr(EXPR_IDENT);
   expr->value.ident = name;
@@ -100,11 +106,6 @@ global_stmt_t *new_global_stmt(global_stmttype_t type) {
   return gstmt;
 }
 
-expr_t *parse_number(token_cursor_t *cursor) {
-  int value = expect(cursor, TOKEN_NUMBER)->value.number;
-  return new_number_expr(value);
-}
-
 argument_t *parse_arguments(token_cursor_t *cursor) {
   if (peek(cursor)->type == TOKEN_PAREN_CLOSE) {
     return NULL;
@@ -141,8 +142,12 @@ expr_t *parse_primary(token_cursor_t *cursor) {
       return new_ident_expr(name);
     }
   }
+  case TOKEN_NUMBER:
+    return new_number_expr(consume(cursor)->value.number);
+  case TOKEN_STRING:
+    return new_string_expr(consume(cursor)->value.string);
   default:
-    return parse_number(cursor);
+    panic("unexpected token: token=%d\n", peek(cursor)->type);
   }
 }
 

@@ -34,6 +34,7 @@ typedef enum {
   TOKEN_BRACK_OPEN,
   TOKEN_BRACK_CLOSE,
   TOKEN_CHAR,
+  TOKEN_STRING,
 } tokentype_t;
 
 typedef struct _token_t token_t;
@@ -42,6 +43,7 @@ struct _token_t {
   union {
     int number;
     char *ident;
+    char *string;
   } value;
 
   token_t *next;
