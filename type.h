@@ -26,6 +26,10 @@ type_t *array_of(type_t *elm_type, int len);
 
 int type_size(type_t *type);
 
-int is_ptr(type_t *type);
+int type_align(type_t *type);
 
 type_t *type_deref(type_t *type);
+
+int is_ptr(type_t *type);
+
+int align_to(int n, int align);

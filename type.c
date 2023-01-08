@@ -34,8 +34,16 @@ int type_size(type_t *type) {
   }
 }
 
-int is_ptr(type_t *type) {
-  return type->kind == TYPE_PTR || type->kind == TYPE_ARRAY;
+int type_align(type_t *type) {
+  switch (type->kind) {
+  case TYPE_INT:
+    return 4;
+  case TYPE_PTR:
+  case TYPE_ARRAY:
+    return 8;
+  default:
+    panic("unknown type: type=%d\n", type->kind);
+  }
 }
 
 type_t *type_deref(type_t *type) {
@@ -48,3 +56,9 @@ type_t *type_deref(type_t *type) {
     panic("cannot dereference: type=%d\n", type->kind);
   }
 }
+
+int is_ptr(type_t *type) {
+  return type->kind == TYPE_PTR || type->kind == TYPE_ARRAY;
+}
+
+int align_to(int n, int align) { return (n + align - 1) & ~(align - 1); }
