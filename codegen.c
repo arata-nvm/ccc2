@@ -236,14 +236,48 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
   gen_pop(ctx, "x8");
 
   switch (expr->type) {
-  case EXPR_ADD:
-    gen(ctx, "  add x8, x8, x9\n");
-    gen_push(ctx, "x8");
+  case EXPR_ADD: {
+    type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
+    type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
+    if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
+      gen(ctx, "  add x8, x8, x9\n");
+      gen_push(ctx, "x8");
+    } else if (lhs_type->kind == TYPE_PTR && rhs_type->kind == TYPE_INT) {
+      gen(ctx, "  mov x10, %d\n", type_size(lhs_type->value.ptr));
+      gen(ctx, "  mul x9, x9, x10\n");
+      gen(ctx, "  add x8, x8, x9\n");
+      gen_push(ctx, "x8");
+    } else if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_PTR) {
+      gen(ctx, "  mov x10, %d\n", type_size(rhs_type->value.ptr));
+      gen(ctx, "  mul x8, x8, x10\n");
+      gen(ctx, "  add x8, x8, x9\n");
+      gen_push(ctx, "x8");
+    } else {
+      error("invalid add operation");
+    }
     break;
-  case EXPR_SUB:
-    gen(ctx, "  sub x8, x8, x9\n");
-    gen_push(ctx, "x8");
+  }
+  case EXPR_SUB: {
+    type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
+    type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
+    if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
+      gen(ctx, "  sub x8, x8, x9\n");
+      gen_push(ctx, "x8");
+    } else if (lhs_type->kind == TYPE_PTR && rhs_type->kind == TYPE_INT) {
+      gen(ctx, "  mov x10, %d\n", type_size(lhs_type->value.ptr));
+      gen(ctx, "  mul x9, x9, x10\n");
+      gen(ctx, "  sub x8, x8, x9\n");
+      gen_push(ctx, "x8");
+    } else if (lhs_type->kind == TYPE_PTR && rhs_type->kind == TYPE_PTR) {
+      gen(ctx, "  sub x8, x8, x9\n");
+      gen(ctx, "  mov x9, %d\n", type_size(lhs_type->value.ptr));
+      gen(ctx, "  udiv x8, x8, x9\n");
+      gen_push(ctx, "x8");
+    } else {
+      error("invalid add operation");
+    }
     break;
+  }
   case EXPR_MUL:
     gen(ctx, "  mul x8, x8, x9\n");
     gen_push(ctx, "x8");

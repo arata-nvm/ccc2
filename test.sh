@@ -64,5 +64,9 @@ assert 34 "int fib(int n) { if (n <= 2) { return 1; } else { return fib(n - 1) +
 assert 1 "int main() { int a = 1; int *b = &a; return *b; }"
 assert 2 "int main() { int a = 1; int *b = &a; *b = 2; return a; }"
 assert 2 "int main() { int a = 1; int *b = &a; int **c = &b; **c = 2; return a; }"
+assert 2 "int main() { int a = 1; int b = 2; int *p = &a; p = p + 1; return *p; }";
+assert 2 "int main() { int a = 1; int b = 2; int *p = &a; p = 1 + p; return *p; }";
+assert 1 "int main() { int a = 1; int b = 2; int *p = &b; p = p - 1; return *p; }";
+assert 1 "int main() { int a = 1; int b = 2; int *p1 = &a; int *p2 = &b; return p2 - p1; }";
 
 echo "OK"
