@@ -110,7 +110,9 @@ typedef struct _parameter_t parameter_t;
 typedef struct _global_stmt_t global_stmt_t;
 
 struct _parameter_t {
+  type_t *type;
   char *name;
+
   parameter_t *next;
 };
 

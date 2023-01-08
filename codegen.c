@@ -20,29 +20,30 @@ void init_ctx(codegen_ctx_t *ctx, char *func_name) {
   ctx->cur_func_name = func_name;
 }
 
-void add_variable(codegen_ctx_t *ctx, char *name, int offset) {
+variable_t *add_variable(codegen_ctx_t *ctx, type_t *type, char *name) {
   variable_t *variable = calloc(1, sizeof(variable_t));
+  variable->type = type;
   variable->name = name;
-  variable->offset = offset;
+
+  ctx->cur_offset += type_size(type);
+  variable->offset = ctx->cur_offset;
+
   variable->next = ctx->variables;
   ctx->variables = variable;
+
+  return variable;
 }
 
-int find_variable(codegen_ctx_t *ctx, char *name) {
+variable_t *find_variable(codegen_ctx_t *ctx, char *name) {
   variable_t *cur = ctx->variables;
   while (cur) {
     if (!strcmp(cur->name, name)) {
-      return cur->offset;
+      return cur;
     }
     cur = cur->next;
   }
 
-  return -1;
-}
-
-int next_offset(codegen_ctx_t *ctx) {
-  ctx->cur_offset += 16;
-  return ctx->cur_offset;
+  return NULL;
 }
 
 int next_label(codegen_ctx_t *ctx) {
@@ -68,11 +69,11 @@ void gen_pop(codegen_ctx_t *ctx, char *reg) {
 void gen_lvalue(expr_t *expr, codegen_ctx_t *ctx) {
   switch (expr->type) {
   case EXPR_IDENT: {
-    int offset = find_variable(ctx, expr->value.ident);
-    if (offset == -1) {
+    variable_t *var = find_variable(ctx, expr->value.ident);
+    if (var == NULL) {
       error("unknown variable");
     }
-    gen(ctx, "  add x8, x29, %d\n", offset);
+    gen(ctx, "  add x8, x29, %d\n", var->offset);
     gen_push(ctx, "x8");
     break;
   case EXPR_DEREF:
@@ -91,11 +92,11 @@ void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
     gen_push(ctx, "x8");
     return;
   case EXPR_IDENT: {
-    int offset = find_variable(ctx, expr->value.ident);
-    if (offset == -1) {
+    variable_t *var = find_variable(ctx, expr->value.ident);
+    if (var == NULL) {
       error("unknown variable");
     }
-    gen(ctx, "  ldr x8, [x29, %d]\n", offset);
+    gen(ctx, "  ldr x8, [x29, %d]\n", var->offset);
     gen_push(ctx, "x8");
     return;
   }
@@ -277,15 +278,14 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
   }
   case STMT_DEFINE: {
     char *name = stmt->value.define.name;
-    if (find_variable(ctx, name) != -1) {
+    if (find_variable(ctx, name) != NULL) {
       error("variable already defined");
     }
-    int offset = next_offset(ctx);
-    add_variable(ctx, name, offset);
+    variable_t *var = add_variable(ctx, stmt->value.define.type, name);
     if (stmt->value.define.value) {
       gen_expr(stmt->value.define.value, ctx);
       gen_pop(ctx, "x8");
-      gen(ctx, "  add x9, x29, %d\n", offset);
+      gen(ctx, "  add x9, x29, %d\n", var->offset);
       gen(ctx, "  str x8, [x9]\n");
     }
     break;
@@ -297,8 +297,7 @@ void gen_func_parameter(parameter_t *params, codegen_ctx_t *ctx) {
   int i = 0;
   char reg_name[3];
   while (params) {
-    int offset = next_offset(ctx);
-    add_variable(ctx, params->name, offset);
+    variable_t *var = add_variable(ctx, params->type, params->name);
     if (i > 7) {
       error("cannot use > 7 arguments");
     }

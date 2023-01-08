@@ -87,8 +87,9 @@ stmt_list_t *new_stmt_list(stmt_t *stmt) {
   return stmt_list;
 }
 
-parameter_t *new_parameter(char *name) {
+parameter_t *new_parameter(type_t *type, char *name) {
   parameter_t *parameter = calloc(1, sizeof(parameter_t));
+  parameter->type = type;
   parameter->name = name;
   return parameter;
 }
@@ -406,16 +407,16 @@ parameter_t *parse_parameter(token_cursor_t *cursor) {
     return NULL;
   }
 
-  expect(cursor, TOKEN_INT);
+  type_t *type = parse_type(cursor);
   char *name = expect(cursor, TOKEN_IDENT)->value.ident;
-  parameter_t *head = new_parameter(name);
+  parameter_t *head = new_parameter(type, name);
   parameter_t *cur = head;
 
   while (peek(cursor)->type == TOKEN_COMMA) {
     expect(cursor, TOKEN_COMMA);
-    expect(cursor, TOKEN_INT);
+    type = parse_type(cursor);
     name = expect(cursor, TOKEN_IDENT)->value.ident;
-    cur->next = new_parameter(name);
+    cur->next = new_parameter(type, name);
     cur = cur->next;
   }
 

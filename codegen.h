@@ -1,9 +1,11 @@
 #pragma once
 #include "parser.h"
+#include "type.h"
 #include <stdio.h>
 
 typedef struct _variable_t variable_t;
 struct _variable_t {
+  type_t *type;
   char *name;
   int offset;
 
