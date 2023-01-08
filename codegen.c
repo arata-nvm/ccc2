@@ -141,8 +141,30 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
 
     return var->type;
   }
-  case EXPR_ADD:
-  case EXPR_SUB:
+  case EXPR_ADD: {
+    type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
+    type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
+    if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
+      return lhs_type;
+    } else if (is_ptr(lhs_type) && rhs_type->kind == TYPE_INT) {
+      return lhs_type;
+    } else if (lhs_type->kind == TYPE_INT && is_ptr(rhs_type)) {
+      return rhs_type;
+    }
+    error("unknown operation");
+  }
+  case EXPR_SUB: {
+    type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
+    type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
+    if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
+      return lhs_type;
+    } else if (is_ptr(lhs_type) && rhs_type->kind == TYPE_INT) {
+      return lhs_type;
+    } else if (is_ptr(lhs_type) && is_ptr(rhs_type)) {
+      return new_type(TYPE_INT);
+    }
+    error("unknown operation");
+  }
   case EXPR_MUL:
   case EXPR_DIV:
   case EXPR_REM:
@@ -161,11 +183,7 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     return ptr_to(infer_expr_type(ctx, expr->value.unary));
   case EXPR_DEREF: {
     type_t *ptr_type = infer_expr_type(ctx, expr->value.unary);
-    if (ptr_type->kind != TYPE_PTR) {
-      error("cannot dereference");
-    }
-
-    return ptr_type->value.ptr;
+    return type_deref(ptr_type);
   }
   case EXPR_SIZEOF:
     return new_type(TYPE_INT);
@@ -186,7 +204,9 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
       error("unknown variable");
     }
     gen_var_addr(ctx, var);
-    gen_load(ctx, var->type);
+    if (var->type->kind != TYPE_ARRAY) {
+      gen_load(ctx, var->type);
+    }
     return;
   }
   case EXPR_ASSIGN:
@@ -248,21 +268,18 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
     type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
     if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
-      gen(ctx, "  add x8, x8, x9\n");
-      gen_push(ctx, "x8");
-    } else if (lhs_type->kind == TYPE_PTR && rhs_type->kind == TYPE_INT) {
-      gen(ctx, "  mov x10, %d\n", type_size(lhs_type->value.ptr));
+      // do nothing
+    } else if (is_ptr(lhs_type) && rhs_type->kind == TYPE_INT) {
+      gen(ctx, "  mov x10, %d\n", type_size(type_deref(lhs_type)));
       gen(ctx, "  mul x9, x9, x10\n");
-      gen(ctx, "  add x8, x8, x9\n");
-      gen_push(ctx, "x8");
-    } else if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_PTR) {
-      gen(ctx, "  mov x10, %d\n", type_size(rhs_type->value.ptr));
+    } else if (lhs_type->kind == TYPE_INT && is_ptr(rhs_type)) {
+      gen(ctx, "  mov x10, %d\n", type_size(type_deref(rhs_type)));
       gen(ctx, "  mul x8, x8, x10\n");
-      gen(ctx, "  add x8, x8, x9\n");
-      gen_push(ctx, "x8");
     } else {
       error("invalid add operation");
     }
+    gen(ctx, "  add x8, x8, x9\n");
+    gen_push(ctx, "x8");
     break;
   }
   case EXPR_SUB: {
@@ -270,20 +287,18 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
     if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
       gen(ctx, "  sub x8, x8, x9\n");
-      gen_push(ctx, "x8");
-    } else if (lhs_type->kind == TYPE_PTR && rhs_type->kind == TYPE_INT) {
-      gen(ctx, "  mov x10, %d\n", type_size(lhs_type->value.ptr));
+    } else if (is_ptr(lhs_type) && rhs_type->kind == TYPE_INT) {
+      gen(ctx, "  mov x10, %d\n", type_size(type_deref(lhs_type)));
       gen(ctx, "  mul x9, x9, x10\n");
       gen(ctx, "  sub x8, x8, x9\n");
-      gen_push(ctx, "x8");
-    } else if (lhs_type->kind == TYPE_PTR && rhs_type->kind == TYPE_PTR) {
+    } else if (is_ptr(lhs_type) && is_ptr(rhs_type)) {
       gen(ctx, "  sub x8, x8, x9\n");
-      gen(ctx, "  mov x9, %d\n", type_size(lhs_type->value.ptr));
+      gen(ctx, "  mov x9, %d\n", type_size(type_deref(lhs_type)));
       gen(ctx, "  udiv x8, x8, x9\n");
-      gen_push(ctx, "x8");
     } else {
       error("invalid add operation");
     }
+    gen_push(ctx, "x8");
     break;
   }
   case EXPR_MUL:

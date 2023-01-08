@@ -31,6 +31,8 @@ typedef enum {
   TOKEN_REF,
   TOKEN_INT,
   TOKEN_SIZEOF,
+  TOKEN_BRACK_OPEN,
+  TOKEN_BRACK_CLOSE,
 } tokentype_t;
 
 typedef struct _token_t token_t;

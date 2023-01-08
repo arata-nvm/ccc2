@@ -70,5 +70,8 @@ assert 1 "int main() { int a = 1; int b = 2; int *p = &b; p = p - 1; return *p; 
 assert 1 "int main() { int a = 1; int b = 2; int *p1 = &a; int *p2 = &b; return p2 - p1; }"
 assert 4 "int main() { int a; return sizeof(a); }"
 assert 8 "int main() { int *a; return sizeof(a); }"
+assert 8 "int main() { int arr[2]; return sizeof(arr); }"
+assert 1 "int main() { int arr[2]; *arr = 1; return *arr; }"
+assert 1 "int main() { int arr[2]; *(arr + 1) = 1; return *(arr + 1); }"
 
 echo "OK"

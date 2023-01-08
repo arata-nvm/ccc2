@@ -368,16 +368,32 @@ type_t *parse_type(token_cursor_t *cursor) {
   return type;
 }
 
+type_t *parse_type_post(token_cursor_t *cursor, type_t *base_type) {
+  if (!consume_if(cursor, TOKEN_BRACK_OPEN)) {
+    return base_type;
+  }
+
+  int len = expect(cursor, TOKEN_NUMBER)->value.number;
+  expect(cursor, TOKEN_BRACK_CLOSE);
+
+  return array_of(base_type, len);
+}
+
 stmt_t *parse_define(token_cursor_t *cursor) {
-  stmt_t *stmt = new_stmt(STMT_DEFINE);
-  stmt->value.define.type = parse_type(cursor);
-  stmt->value.define.name = expect(cursor, TOKEN_IDENT)->value.ident;
+  type_t *type = parse_type(cursor);
+  char *name = expect(cursor, TOKEN_IDENT)->value.ident;
+  type = parse_type_post(cursor, type);
+
+  expr_t *value = NULL;
   if (consume_if(cursor, TOKEN_ASSIGN)) {
-    stmt->value.define.value = parse_expr(cursor);
-  } else {
-    stmt->value.define.value = NULL;
+    value = parse_expr(cursor);
   }
   expect(cursor, TOKEN_SEMICOLON);
+
+  stmt_t *stmt = new_stmt(STMT_DEFINE);
+  stmt->value.define.type = type;
+  stmt->value.define.name = name;
+  stmt->value.define.value = value;
   return stmt;
 }
 
