@@ -3,8 +3,10 @@
 #include <stdarg.h>
 #include <string.h>
 
-void gen_expr(expr_t *expr, codegen_ctx_t *ctx);
-void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx);
+char *arg_regs[] = {"x0", "x1", "x2", "x3", "x4", "x5", "x6"};
+
+void gen_expr(codegen_ctx_t *ctx, expr_t *expr);
+void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt);
 
 codegen_ctx_t *new_codegen_ctx(FILE *fp) {
   codegen_ctx_t *ctx = calloc(1, sizeof(codegen_ctx_t));
@@ -58,6 +60,14 @@ void gen(codegen_ctx_t *ctx, char *format, ...) {
   va_end(args);
 }
 
+void gen_label(codegen_ctx_t *ctx, int label) {
+  gen(ctx, ".L.%s.%d:\n", ctx->cur_func_name, label);
+}
+
+void gen_branch(codegen_ctx_t *ctx, char *op, int label) {
+  gen(ctx, "  %s .L.%s.%d\n", op, ctx->cur_func_name, label);
+}
+
 void gen_push(codegen_ctx_t *ctx, char *reg) {
   gen(ctx, "  str %s, [sp, -16]!\n", reg);
 }
@@ -66,18 +76,34 @@ void gen_pop(codegen_ctx_t *ctx, char *reg) {
   gen(ctx, "  ldr %s, [sp], 16\n", reg);
 }
 
-void gen_lvalue(expr_t *expr, codegen_ctx_t *ctx) {
+void gen_load(codegen_ctx_t *ctx) {
+  gen_pop(ctx, "x8");
+  gen(ctx, "  ldr x8, [x8]\n");
+  gen_push(ctx, "x8");
+}
+
+void gen_store(codegen_ctx_t *ctx) {
+  gen_pop(ctx, "x8"); // dst
+  gen_pop(ctx, "x9"); // src
+  gen(ctx, "  str x9, [x8]\n");
+}
+
+void gen_var_addr(codegen_ctx_t *ctx, variable_t *var) {
+  gen(ctx, "  add x8, x29, %d\n", var->offset);
+  gen_push(ctx, "x8");
+}
+
+void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var == NULL) {
       error("unknown variable");
     }
-    gen(ctx, "  add x8, x29, %d\n", var->offset);
-    gen_push(ctx, "x8");
+    gen_var_addr(ctx, var);
     break;
   case EXPR_DEREF:
-    gen_expr(expr->value.unary, ctx);
+    gen_expr(ctx, expr->value.unary);
     break;
   }
   default:
@@ -85,7 +111,7 @@ void gen_lvalue(expr_t *expr, codegen_ctx_t *ctx) {
   }
 }
 
-void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
+void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_NUMBER:
     gen(ctx, "  mov x8, %d\n", expr->value.number);
@@ -96,31 +122,29 @@ void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
     if (var == NULL) {
       error("unknown variable");
     }
-    gen(ctx, "  ldr x8, [x29, %d]\n", var->offset);
-    gen_push(ctx, "x8");
+    gen_var_addr(ctx, var);
+    gen_load(ctx);
     return;
   }
   case EXPR_ASSIGN:
-    gen_expr(expr->value.assign.src, ctx);
-    gen_lvalue(expr->value.assign.dst, ctx);
-    gen_pop(ctx, "x9");
-    gen_pop(ctx, "x8");
-    gen(ctx, "  str x8, [x9]\n");
-    gen_push(ctx, "x8");
+    gen_expr(ctx, expr->value.assign.src);
+    gen_lvalue(ctx, expr->value.assign.dst);
+    gen_store(ctx);
+    gen_push(ctx, "x8"); // FIXME
     return;
   case EXPR_CALL: {
     int i = 0;
-    char reg_name[3];
     argument_t *cur_arg = expr->value.call.args;
     while (cur_arg) {
-      gen_expr(cur_arg->value, ctx);
       if (i > 7) {
         error("cannot use > 7 arguments");
       }
-      snprintf(reg_name, 3, "x%d", i);
-      gen_pop(ctx, reg_name);
-      i++;
+
+      gen_expr(ctx, cur_arg->value);
+      gen_pop(ctx, arg_regs[i]);
+
       cur_arg = cur_arg->next;
+      i++;
     }
 
     gen(ctx, "  bl %s\n", expr->value.ident);
@@ -134,21 +158,19 @@ void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
   // unary op
   switch (expr->type) {
   case EXPR_REF:
-    gen_lvalue(expr->value.unary, ctx);
+    gen_lvalue(ctx, expr->value.unary);
     return;
   case EXPR_DEREF:
-    gen_expr(expr->value.unary, ctx);
-    gen_pop(ctx, "x8");
-    gen(ctx, "  ldr x8, [x8]\n");
-    gen_push(ctx, "x8");
+    gen_expr(ctx, expr->value.unary);
+    gen_load(ctx);
     return;
   default:
     break;
   }
 
   // binary op
-  gen_expr(expr->value.binary.lhs, ctx);
-  gen_expr(expr->value.binary.rhs, ctx);
+  gen_expr(ctx, expr->value.binary.lhs);
+  gen_expr(ctx, expr->value.binary.rhs);
   gen_pop(ctx, "x9");
   gen_pop(ctx, "x8");
 
@@ -209,69 +231,85 @@ void gen_expr(expr_t *expr, codegen_ctx_t *ctx) {
   }
 }
 
-void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
+void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   switch (stmt->type) {
   case STMT_EXPR:
-    gen_expr(stmt->value.expr, ctx);
+    gen_expr(ctx, stmt->value.expr);
     break;
   case STMT_RETURN:
-    gen_expr(stmt->value.ret, ctx);
-    gen(ctx, "  b .L%s.ret\n", ctx->cur_func_name);
+    gen_expr(ctx, stmt->value.ret);
+    gen(ctx, "  b .L.%s.ret\n", ctx->cur_func_name);
     break;
   case STMT_IF: {
     int else_label = next_label(ctx);
-    int merge_label = next_label(ctx);
-    gen_expr(stmt->value.if_.cond, ctx);
-    gen_pop(ctx, "x8");
-    gen(ctx, "  subs x8, x8, 0\n");
-    gen(ctx, "  beq .L%s.if.%d\n", ctx->cur_func_name, else_label);
-    gen_stmt(stmt->value.if_.then_, ctx);
     if (stmt->value.if_.else_) {
-      gen(ctx, "b .L%s.if.%d\n", ctx->cur_func_name, merge_label);
+      int merge_label = next_label(ctx);
+      gen_expr(ctx, stmt->value.if_.cond);
+      gen_pop(ctx, "x8");
+      gen(ctx, "  subs x8, x8, 0\n");
+      gen_branch(ctx, "beq", else_label);
+
+      gen_stmt(ctx, stmt->value.if_.then_);
+      gen_branch(ctx, "b", merge_label);
+
+      gen_label(ctx, else_label);
+      gen_stmt(ctx, stmt->value.if_.else_);
+
+      gen_label(ctx, merge_label);
+    } else {
+      gen_expr(ctx, stmt->value.if_.cond);
+      gen_pop(ctx, "x8");
+      gen(ctx, "  subs x8, x8, 0\n");
+      gen_branch(ctx, "beq", else_label);
+
+      gen_stmt(ctx, stmt->value.if_.then_);
+
+      gen_label(ctx, else_label);
     }
-    gen(ctx, ".L%s.if.%d:\n", ctx->cur_func_name, else_label);
-    if (stmt->value.if_.else_) {
-      gen_stmt(stmt->value.if_.else_, ctx);
-      gen(ctx, ".L%s.if.%d:\n", ctx->cur_func_name, merge_label);
-    }
+
     break;
   }
   case STMT_WHILE: {
     int cond_label = next_label(ctx);
     int end_label = next_label(ctx);
-    gen(ctx, ".L%s.while.%d:\n", ctx->cur_func_name, cond_label);
-    gen_expr(stmt->value.while_.cond, ctx);
+    gen_label(ctx, cond_label);
+    gen_expr(ctx, stmt->value.while_.cond);
     gen(ctx, "  subs x8, x8, 0\n");
-    gen(ctx, "  beq .L%s.while.%d\n", ctx->cur_func_name, end_label);
-    gen_stmt(stmt->value.while_.body, ctx);
-    gen(ctx, "  b .L%s.while.%d\n", ctx->cur_func_name, cond_label);
-    gen(ctx, ".L%s.while.%d:\n", ctx->cur_func_name, end_label);
+    gen_branch(ctx, "beq", end_label);
+
+    gen_stmt(ctx, stmt->value.while_.body);
+    gen_branch(ctx, "b", cond_label);
+
+    gen_label(ctx, end_label);
     break;
   }
   case STMT_FOR: {
     int cond_label = next_label(ctx);
     int end_label = next_label(ctx);
     if (stmt->value.for_.init) {
-      gen_stmt(stmt->value.for_.init, ctx);
+      gen_stmt(ctx, stmt->value.for_.init);
     }
-    gen(ctx, ".L%s.for.%d:\n", ctx->cur_func_name, cond_label);
+
+    gen_label(ctx, cond_label);
     if (stmt->value.for_.cond) {
-      gen_expr(stmt->value.for_.cond, ctx);
+      gen_expr(ctx, stmt->value.for_.cond);
       gen(ctx, "  subs x8, x8, 0\n");
-      gen(ctx, "  beq .L%s.for.%d\n", ctx->cur_func_name, end_label);
+      gen_branch(ctx, "beq", end_label);
     }
-    gen_stmt(stmt->value.for_.body, ctx);
+
+    gen_stmt(ctx, stmt->value.for_.body);
     if (stmt->value.for_.loop) {
-      gen_expr(stmt->value.for_.loop, ctx);
+      gen_expr(ctx, stmt->value.for_.loop);
     }
-    gen(ctx, "  b .L%s.for.%d\n", ctx->cur_func_name, cond_label);
-    gen(ctx, ".L%s.for.%d:\n", ctx->cur_func_name, end_label);
+    gen_branch(ctx, "b", cond_label);
+
+    gen_label(ctx, end_label);
     break;
   }
   case STMT_BLOCK: {
     stmt_list_t *cur = stmt->value.block;
     while (cur) {
-      gen_stmt(cur->stmt, ctx);
+      gen_stmt(ctx, cur->stmt);
       cur = cur->next;
     }
     break;
@@ -283,32 +321,33 @@ void gen_stmt(stmt_t *stmt, codegen_ctx_t *ctx) {
     }
     variable_t *var = add_variable(ctx, stmt->value.define.type, name);
     if (stmt->value.define.value) {
-      gen_expr(stmt->value.define.value, ctx);
-      gen_pop(ctx, "x8");
-      gen(ctx, "  add x9, x29, %d\n", var->offset);
-      gen(ctx, "  str x8, [x9]\n");
+      gen_expr(ctx, stmt->value.define.value);
+      gen_var_addr(ctx, var);
+      gen_store(ctx);
     }
     break;
   }
   }
 }
 
-void gen_func_parameter(parameter_t *params, codegen_ctx_t *ctx) {
+void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params) {
   int i = 0;
-  char reg_name[3];
   while (params) {
-    variable_t *var = add_variable(ctx, params->type, params->name);
     if (i > 7) {
       error("cannot use > 7 arguments");
     }
-    snprintf(reg_name, 3, "x%d", i);
-    gen(ctx, "  str %s, [x29, %d]\n", reg_name, var->offset);
-    i++;
+
+    variable_t *var = add_variable(ctx, params->type, params->name);
+    gen_push(ctx, arg_regs[i]);
+    gen_var_addr(ctx, var);
+    gen_store(ctx);
+
     params = params->next;
+    i++;
   }
 }
 
-void gen_global_stmt(global_stmt_t *gstmt, codegen_ctx_t *ctx) {
+void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
   switch (gstmt->type) {
   case GSTMT_FUNC:
     init_ctx(ctx, gstmt->value.func.name);
@@ -318,10 +357,10 @@ void gen_global_stmt(global_stmt_t *gstmt, codegen_ctx_t *ctx) {
     gen(ctx, "  stp x29, x30, [sp, -0x100]!\n"); // TODO
     gen(ctx, "  mov x29, sp\n");
 
-    gen_func_parameter(gstmt->value.func.params, ctx);
-    gen_stmt(gstmt->value.func.body, ctx);
+    gen_func_parameter(ctx, gstmt->value.func.params);
+    gen_stmt(ctx, gstmt->value.func.body);
 
-    gen(ctx, ".L%s.ret:\n", ctx->cur_func_name);
+    gen(ctx, ".L.%s.ret:\n", ctx->cur_func_name);
     gen_pop(ctx, "x0");
     gen(ctx, "  mov sp, x29\n");
     gen(ctx, "  ldp x29, x30, [sp], 0x100\n");
@@ -334,7 +373,7 @@ void gen_code(global_stmt_t *gstmt, FILE *fp) {
 
   global_stmt_t *cur = gstmt;
   while (cur) {
-    gen_global_stmt(cur, ctx);
+    gen_global_stmt(ctx, cur);
     cur = cur->next;
   }
 }
