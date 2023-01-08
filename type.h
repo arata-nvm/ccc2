@@ -31,6 +31,8 @@ int type_align(type_t *type);
 
 type_t *type_deref(type_t *type);
 
+int is_integer(type_t *type);
+
 int is_ptr(type_t *type);
 
 int align_to(int n, int align);

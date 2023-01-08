@@ -78,5 +78,6 @@ assert 1 "int main() { int arr[2]; arr[1] = 1; return arr[1]; }"
 assert 2 "int main() { int arr[2]; arr[0] = 1; arr[1] = 2; arr[0] = 1; return arr[1]; }"
 assert 1 "int main() { char a = 1; return a; }"
 assert 2 "int main() { char a = 1; int b = 2; return b; }"
+assert 3 "int main() { int a = 1; char b = 2; return a + b; }"
 
 echo "OK"

@@ -152,11 +152,11 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_ADD: {
     type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
     type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
-    if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
+    if (is_integer(lhs_type) && is_integer(rhs_type)) {
       return lhs_type;
-    } else if (is_ptr(lhs_type) && rhs_type->kind == TYPE_INT) {
+    } else if (is_ptr(lhs_type) && is_integer(rhs_type)) {
       return lhs_type;
-    } else if (lhs_type->kind == TYPE_INT && is_ptr(rhs_type)) {
+    } else if (is_integer(lhs_type) && is_ptr(rhs_type)) {
       return rhs_type;
     }
     panic("invalid add operation: lhs=%d, rhs=%d\n", lhs_type->kind,
@@ -165,9 +165,9 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_SUB: {
     type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
     type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
-    if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
+    if (is_integer(lhs_type) && is_integer(rhs_type)) {
       return lhs_type;
-    } else if (is_ptr(lhs_type) && rhs_type->kind == TYPE_INT) {
+    } else if (is_ptr(lhs_type) && is_integer(rhs_type)) {
       return lhs_type;
     } else if (is_ptr(lhs_type) && is_ptr(rhs_type)) {
       return new_type(TYPE_INT);
@@ -276,12 +276,12 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_ADD: {
     type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
     type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
-    if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
+    if (is_integer(lhs_type) && is_integer(rhs_type)) {
       // do nothing
-    } else if (is_ptr(lhs_type) && rhs_type->kind == TYPE_INT) {
+    } else if (is_ptr(lhs_type) && is_integer(rhs_type)) {
       gen(ctx, "  mov x10, %d\n", type_size(type_deref(lhs_type)));
       gen(ctx, "  mul x9, x9, x10\n");
-    } else if (lhs_type->kind == TYPE_INT && is_ptr(rhs_type)) {
+    } else if (is_integer(lhs_type) && is_ptr(rhs_type)) {
       gen(ctx, "  mov x10, %d\n", type_size(type_deref(rhs_type)));
       gen(ctx, "  mul x8, x8, x10\n");
     } else {
@@ -295,9 +295,9 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_SUB: {
     type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
     type_t *rhs_type = infer_expr_type(ctx, expr->value.binary.rhs);
-    if (lhs_type->kind == TYPE_INT && rhs_type->kind == TYPE_INT) {
+    if (is_integer(lhs_type) && is_integer(rhs_type)) {
       gen(ctx, "  sub x8, x8, x9\n");
-    } else if (is_ptr(lhs_type) && rhs_type->kind == TYPE_INT) {
+    } else if (is_ptr(lhs_type) && is_integer(rhs_type)) {
       gen(ctx, "  mov x10, %d\n", type_size(type_deref(lhs_type)));
       gen(ctx, "  mul x9, x9, x10\n");
       gen(ctx, "  sub x8, x8, x9\n");

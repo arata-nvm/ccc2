@@ -61,6 +61,10 @@ type_t *type_deref(type_t *type) {
   }
 }
 
+int is_integer(type_t *type) {
+  return type->kind == TYPE_CHAR || type->kind == TYPE_INT;
+}
+
 int is_ptr(type_t *type) {
   return type->kind == TYPE_PTR || type->kind == TYPE_ARRAY;
 }
