@@ -122,6 +122,11 @@ token_t *read_string_token(FILE *fp) {
   return token;
 }
 
+void read_line_comment(FILE *fp) {
+  while (fgetc(fp) != '\n')
+    ;
+}
+
 token_t *read_next_token(FILE *fp) {
   int c = read_char(fp);
 
@@ -150,8 +155,6 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_SUB);
   case '*':
     return new_token(TOKEN_MUL);
-  case '/':
-    return new_token(TOKEN_DIV);
   case '%':
     return new_token(TOKEN_REM);
   case '(':
@@ -172,6 +175,15 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_BRACK_OPEN);
   case ']':
     return new_token(TOKEN_BRACK_CLOSE);
+  case '/': {
+    char c2 = fgetc(fp);
+    if (c2 == '/') {
+      read_line_comment(fp);
+      return read_next_token(fp);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_DIV);
+  }
   case '<': {
     char c2 = fgetc(fp);
     if (c2 == '=') {

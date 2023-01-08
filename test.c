@@ -184,6 +184,7 @@ int main() {
     assert(65, s[0]);
     assert(0, s[1]);
   }
+  // hoge
 
   printf("[OK]\n");
   return 0;
