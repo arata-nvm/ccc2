@@ -167,6 +167,8 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
 
     return ptr_type->value.ptr;
   }
+  case EXPR_SIZEOF:
+    return new_type(TYPE_INT);
   }
 
   error("unreachable");
@@ -225,6 +227,12 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen_expr(ctx, expr->value.unary);
     gen_load(ctx, infer_expr_type(ctx, expr));
     return;
+  case EXPR_SIZEOF: {
+    type_t *type = infer_expr_type(ctx, expr->value.unary);
+    gen(ctx, "  mov x8, %d\n", type_size(type));
+    gen_push(ctx, "x8");
+    return;
+  }
   default:
     break;
   }

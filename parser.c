@@ -160,6 +160,9 @@ expr_t *parse_unary(token_cursor_t *cursor) {
   case TOKEN_MUL:
     consume(cursor);
     return new_unary_expr(EXPR_DEREF, parse_unary(cursor));
+  case TOKEN_SIZEOF:
+    consume(cursor);
+    return new_unary_expr(EXPR_SIZEOF, parse_unary(cursor));
   default:
     return parse_primary(cursor);
   }

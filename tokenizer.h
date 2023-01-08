@@ -30,6 +30,7 @@ typedef enum {
   TOKEN_COMMA,
   TOKEN_REF,
   TOKEN_INT,
+  TOKEN_SIZEOF,
 } tokentype_t;
 
 typedef struct _token_t token_t;

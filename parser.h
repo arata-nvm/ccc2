@@ -24,6 +24,7 @@ typedef enum {
   EXPR_CALL,
   EXPR_REF,
   EXPR_DEREF,
+  EXPR_SIZEOF,
 } exprtype_t;
 
 typedef struct _argument_t argument_t;
