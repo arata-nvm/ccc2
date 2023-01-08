@@ -146,17 +146,31 @@ expr_t *parse_primary(token_cursor_t *cursor) {
   }
 }
 
+expr_t *parse_postfix(token_cursor_t *cursor) {
+  expr_t *expr = parse_primary(cursor);
+
+  switch (peek(cursor)->type) {
+  case TOKEN_BRACK_OPEN:
+    consume(cursor);
+    expr_t *index = parse_expr(cursor);
+    expect(cursor, TOKEN_BRACK_CLOSE);
+    return new_unary_expr(EXPR_DEREF, new_binary_expr(EXPR_ADD, expr, index));
+  default:
+    return expr;
+  }
+}
+
 expr_t *parse_unary(token_cursor_t *cursor) {
   switch (peek(cursor)->type) {
   case TOKEN_ADD:
     consume(cursor);
-    return parse_primary(cursor);
+    return parse_postfix(cursor);
   case TOKEN_SUB:
     consume(cursor);
-    return new_binary_expr(EXPR_SUB, new_number_expr(0), parse_primary(cursor));
+    return new_binary_expr(EXPR_SUB, new_number_expr(0), parse_postfix(cursor));
   case TOKEN_REF:
     consume(cursor);
-    return new_unary_expr(EXPR_REF, parse_primary(cursor));
+    return new_unary_expr(EXPR_REF, parse_postfix(cursor));
   case TOKEN_MUL:
     consume(cursor);
     return new_unary_expr(EXPR_DEREF, parse_unary(cursor));
@@ -164,7 +178,7 @@ expr_t *parse_unary(token_cursor_t *cursor) {
     consume(cursor);
     return new_unary_expr(EXPR_SIZEOF, parse_unary(cursor));
   default:
-    return parse_primary(cursor);
+    return parse_postfix(cursor);
   }
 }
 
