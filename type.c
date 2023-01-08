@@ -17,7 +17,7 @@ type_t *ptr_to(type_t *base_type) {
 int type_size(type_t *type) {
   switch (type->kind) {
   case TYPE_INT:
-    return 8;
+    return 4;
   case TYPE_PTR:
     return 8;
   }

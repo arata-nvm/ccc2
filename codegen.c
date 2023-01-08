@@ -76,16 +76,34 @@ void gen_pop(codegen_ctx_t *ctx, char *reg) {
   gen(ctx, "  ldr %s, [sp], 16\n", reg);
 }
 
-void gen_load(codegen_ctx_t *ctx) {
+void gen_load(codegen_ctx_t *ctx, type_t *type) {
   gen_pop(ctx, "x8");
-  gen(ctx, "  ldr x8, [x8]\n");
+  switch (type_size(type)) {
+  case 4:
+    gen(ctx, "  ldr w8, [x8]\n");
+    break;
+  case 8:
+    gen(ctx, "  ldr x8, [x8]\n");
+    break;
+  default:
+    error("unsupported type");
+  }
   gen_push(ctx, "x8");
 }
 
-void gen_store(codegen_ctx_t *ctx) {
+void gen_store(codegen_ctx_t *ctx, type_t *type) {
   gen_pop(ctx, "x8"); // dst
   gen_pop(ctx, "x9"); // src
-  gen(ctx, "  str x9, [x8]\n");
+  switch (type_size(type)) {
+  case 4:
+    gen(ctx, "  str w9, [x8]\n");
+    break;
+  case 8:
+    gen(ctx, "  str x9, [x8]\n");
+    break;
+  default:
+    error("unsupported type");
+  }
 }
 
 void gen_var_addr(codegen_ctx_t *ctx, variable_t *var) {
@@ -111,6 +129,49 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
   }
 }
 
+type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
+  switch (expr->type) {
+  case EXPR_NUMBER:
+    return new_type(TYPE_INT);
+  case EXPR_IDENT: {
+    variable_t *var = find_variable(ctx, expr->value.ident);
+    if (var == NULL) {
+      error("unknown variable");
+    }
+
+    return var->type;
+  }
+  case EXPR_ADD:
+  case EXPR_SUB:
+  case EXPR_MUL:
+  case EXPR_DIV:
+  case EXPR_REM:
+  case EXPR_LT:
+  case EXPR_LE:
+  case EXPR_GT:
+  case EXPR_GE:
+  case EXPR_EQ:
+  case EXPR_NE:
+    return new_type(TYPE_INT); // TODO
+  case EXPR_ASSIGN:
+    return infer_expr_type(ctx, expr->value.assign.dst);
+  case EXPR_CALL:
+    return new_type(TYPE_INT); // TODO
+  case EXPR_REF:
+    return ptr_to(infer_expr_type(ctx, expr->value.unary));
+  case EXPR_DEREF: {
+    type_t *ptr_type = infer_expr_type(ctx, expr->value.unary);
+    if (ptr_type->kind != TYPE_PTR) {
+      error("cannot dereference");
+    }
+
+    return ptr_type->value.ptr;
+  }
+  }
+
+  error("unreachable");
+}
+
 void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_NUMBER:
@@ -123,13 +184,13 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
       error("unknown variable");
     }
     gen_var_addr(ctx, var);
-    gen_load(ctx);
+    gen_load(ctx, var->type);
     return;
   }
   case EXPR_ASSIGN:
     gen_expr(ctx, expr->value.assign.src);
     gen_lvalue(ctx, expr->value.assign.dst);
-    gen_store(ctx);
+    gen_store(ctx, infer_expr_type(ctx, expr));
     gen_push(ctx, "x8"); // FIXME
     return;
   case EXPR_CALL: {
@@ -162,7 +223,7 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     return;
   case EXPR_DEREF:
     gen_expr(ctx, expr->value.unary);
-    gen_load(ctx);
+    gen_load(ctx, infer_expr_type(ctx, expr));
     return;
   default:
     break;
@@ -323,7 +384,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     if (stmt->value.define.value) {
       gen_expr(ctx, stmt->value.define.value);
       gen_var_addr(ctx, var);
-      gen_store(ctx);
+      gen_store(ctx, var->type);
     }
     break;
   }
@@ -340,7 +401,7 @@ void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params) {
     variable_t *var = add_variable(ctx, params->type, params->name);
     gen_push(ctx, arg_regs[i]);
     gen_var_addr(ctx, var);
-    gen_store(ctx);
+    gen_store(ctx, var->type);
 
     params = params->next;
     i++;
