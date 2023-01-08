@@ -29,9 +29,9 @@ int type_size(type_t *type) {
     return 8;
   case TYPE_ARRAY:
     return type_size(type->value.array.elm) * type->value.array.len;
+  default:
+    panic("unknown type: type=%d\n", type->kind);
   }
-
-  error("unknown type");
 }
 
 int is_ptr(type_t *type) {
@@ -45,6 +45,6 @@ type_t *type_deref(type_t *type) {
   case TYPE_ARRAY:
     return type->value.array.elm;
   default:
-    error("cannot dereference");
+    panic("cannot dereference: type=%d\n", type->kind);
   }
 }

@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
+#pragma once
 
-#define error(msg)                                                             \
-  {                                                                            \
-    fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, msg);                    \
-    exit(1);                                                                   \
-  }
+void panic(char *format, ...);

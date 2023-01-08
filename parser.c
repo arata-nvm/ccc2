@@ -33,7 +33,7 @@ token_t *consume_if(token_cursor_t *cursor, tokentype_t type) {
 token_t *expect(token_cursor_t *cursor, tokentype_t type) {
   token_t *cur_token = consume(cursor);
   if (cur_token->type != type) {
-    error("unexpected token");
+    panic("unexpected token: expected=%d, actual=%d\n", type, cur_token->type);
   }
   return cur_token;
 }

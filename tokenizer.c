@@ -173,7 +173,7 @@ token_t *read_next_token(FILE *fp) {
   }
   }
 
-  error("unexpected char");
+  panic("unexpected char '%c'\n", c);
 }
 
 token_t *tokenize(FILE *fp) {

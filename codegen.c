@@ -1,6 +1,7 @@
 #include "codegen.h"
 #include "error.h"
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 char *arg_regs[] = {"x0", "x1", "x2", "x3", "x4", "x5", "x6"};
@@ -86,7 +87,7 @@ void gen_load(codegen_ctx_t *ctx, type_t *type) {
     gen(ctx, "  ldr x8, [x8]\n");
     break;
   default:
-    error("unsupported type");
+    panic("cannot load: type=%d\n", type->kind);
   }
   gen_push(ctx, "x8");
 }
@@ -102,7 +103,7 @@ void gen_store(codegen_ctx_t *ctx, type_t *type) {
     gen(ctx, "  str x9, [x8]\n");
     break;
   default:
-    error("unsupported type");
+    panic("cannot store: type=%d\n", type->kind);
   }
 }
 
@@ -116,7 +117,7 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var == NULL) {
-      error("unknown variable");
+      panic("unknown variable '%s'\n", expr->value.ident);
     }
     gen_var_addr(ctx, var);
     break;
@@ -125,7 +126,7 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
     break;
   }
   default:
-    error("cannot generate lvalue");
+    panic("cannot generate lvalue: expr=%d\n", expr->type);
   }
 }
 
@@ -136,7 +137,7 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var == NULL) {
-      error("unknown variable");
+      panic("unknown variable '%s'\n", expr->value.ident);
     }
 
     return var->type;
@@ -151,7 +152,8 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     } else if (lhs_type->kind == TYPE_INT && is_ptr(rhs_type)) {
       return rhs_type;
     }
-    error("unknown operation");
+    panic("invalid add operation: lhs=%d, rhs=%d\n", lhs_type->kind,
+          rhs_type->kind);
   }
   case EXPR_SUB: {
     type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
@@ -163,7 +165,8 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     } else if (is_ptr(lhs_type) && is_ptr(rhs_type)) {
       return new_type(TYPE_INT);
     }
-    error("unknown operation");
+    panic("invalid sub operation: lhs=%d, rhs=%d\n", lhs_type->kind,
+          rhs_type->kind);
   }
   case EXPR_MUL:
   case EXPR_DIV:
@@ -188,8 +191,7 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_SIZEOF:
     return new_type(TYPE_INT);
   }
-
-  error("unreachable");
+  panic("unreachable\n");
 }
 
 void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
@@ -201,7 +203,7 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var == NULL) {
-      error("unknown variable");
+      panic("unknown variable '%s'\n", expr->value.ident);
     }
     gen_var_addr(ctx, var);
     if (var->type->kind != TYPE_ARRAY) {
@@ -220,7 +222,7 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     argument_t *cur_arg = expr->value.call.args;
     while (cur_arg) {
       if (i > 7) {
-        error("cannot use > 7 arguments");
+        panic("cannot use > 7 arguments\n");
       }
 
       gen_expr(ctx, cur_arg->value);
@@ -276,7 +278,8 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
       gen(ctx, "  mov x10, %d\n", type_size(type_deref(rhs_type)));
       gen(ctx, "  mul x8, x8, x10\n");
     } else {
-      error("invalid add operation");
+      panic("invalid add operation: lhs=%d, rhs=%d\n", lhs_type->kind,
+            rhs_type->kind);
     }
     gen(ctx, "  add x8, x8, x9\n");
     gen_push(ctx, "x8");
@@ -296,7 +299,8 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
       gen(ctx, "  mov x9, %d\n", type_size(type_deref(lhs_type)));
       gen(ctx, "  udiv x8, x8, x9\n");
     } else {
-      error("invalid add operation");
+      panic("invalid add operation: lhs=%d, rhs=%d\n", lhs_type->kind,
+            rhs_type->kind);
     }
     gen_push(ctx, "x8");
     break;
@@ -435,7 +439,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   case STMT_DEFINE: {
     char *name = stmt->value.define.name;
     if (find_variable(ctx, name) != NULL) {
-      error("variable already defined");
+      panic("variable '%s' already defined\n", name);
     }
     variable_t *var = add_variable(ctx, stmt->value.define.type, name);
     if (stmt->value.define.value) {
@@ -452,7 +456,7 @@ void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params) {
   int i = 0;
   while (params) {
     if (i > 7) {
-      error("cannot use > 7 arguments");
+      panic("cannot use > 7 arguments\n");
     }
 
     variable_t *var = add_variable(ctx, params->type, params->name);

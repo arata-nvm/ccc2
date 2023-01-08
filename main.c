@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
 
   FILE *fp = fopen(argv[1], "r");
   if (fp == NULL) {
-    error("failed to open file");
+    panic("failed to open file '%s'\n", argv[1]);
   }
 
   token_t *token = tokenize(fp);
