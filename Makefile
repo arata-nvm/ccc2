@@ -9,7 +9,9 @@ $(TARGET): $(OBJS)
 
 .PHONY: test
 test: $(TARGET)
-	./test.sh
+	./$(TARGET) test.c > tmp.s
+	$(CC) tmp.s -o tmp
+	./tmp
 
 .PHONY: clean
 clean:
