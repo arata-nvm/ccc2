@@ -23,6 +23,8 @@ type_t *array_of(type_t *elm_type, int len) {
 
 int type_size(type_t *type) {
   switch (type->kind) {
+  case TYPE_CHAR:
+    return 1;
   case TYPE_INT:
     return 4;
   case TYPE_PTR:
@@ -36,6 +38,8 @@ int type_size(type_t *type) {
 
 int type_align(type_t *type) {
   switch (type->kind) {
+  case TYPE_CHAR:
+    return 1;
   case TYPE_INT:
     return 4;
   case TYPE_PTR:

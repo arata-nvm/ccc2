@@ -41,6 +41,8 @@ void replace_reserved_tokens(token_t *token) {
     token->type = TOKEN_INT;
   } else if (!strcmp(ident, "sizeof")) {
     token->type = TOKEN_SIZEOF;
+  } else if (!strcmp(ident, "char")) {
+    token->type = TOKEN_CHAR;
   }
 }
 

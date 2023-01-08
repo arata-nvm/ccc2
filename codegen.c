@@ -81,6 +81,9 @@ void gen_pop(codegen_ctx_t *ctx, char *reg) {
 void gen_load(codegen_ctx_t *ctx, type_t *type) {
   gen_pop(ctx, "x8");
   switch (type_size(type)) {
+  case 1:
+    gen(ctx, "  ldrb w8, [x8]\n");
+    break;
   case 4:
     gen(ctx, "  ldr w8, [x8]\n");
     break;
@@ -97,6 +100,9 @@ void gen_store(codegen_ctx_t *ctx, type_t *type) {
   gen_pop(ctx, "x8"); // dst
   gen_pop(ctx, "x9"); // src
   switch (type_size(type)) {
+  case 1:
+    gen(ctx, "  strb w9, [x8]\n");
+    break;
   case 4:
     gen(ctx, "  str w9, [x8]\n");
     break;

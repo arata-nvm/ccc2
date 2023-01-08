@@ -372,8 +372,19 @@ stmt_t *parse_block(token_cursor_t *cursor) {
 }
 
 type_t *parse_type(token_cursor_t *cursor) {
-  expect(cursor, TOKEN_INT);
-  type_t *type = new_type(TYPE_INT);
+  type_t *type;
+  switch (peek(cursor)->type) {
+  case TOKEN_CHAR:
+    consume(cursor);
+    type = new_type(TYPE_CHAR);
+    break;
+  case TOKEN_INT:
+    consume(cursor);
+    type = new_type(TYPE_INT);
+    break;
+  default:
+    panic("unknown type: token=%d\n", peek(cursor)->type);
+  }
 
   while (consume_if(cursor, TOKEN_MUL)) {
     type = ptr_to(type);
@@ -424,6 +435,7 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
     return parse_for(cursor);
   case TOKEN_BRACE_OPEN:
     return parse_block(cursor);
+  case TOKEN_CHAR: // TODO
   case TOKEN_INT:
     return parse_define(cursor);
   default:
