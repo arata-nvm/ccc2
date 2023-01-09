@@ -139,15 +139,7 @@ expr_t *parse_primary(token_cursor_t *cursor) {
     return expr;
   case TOKEN_IDENT: {
     char *name = consume(cursor)->value.ident;
-    if (consume_if(cursor, TOKEN_PAREN_OPEN)) {
-      expr_t *expr = new_expr(EXPR_CALL);
-      expr->value.call.name = name;
-      expr->value.call.args = parse_arguments(cursor);
-      expect(cursor, TOKEN_PAREN_CLOSE);
-      return expr;
-    } else {
-      return new_ident_expr(name);
-    }
+    return new_ident_expr(name);
   }
   case TOKEN_NUMBER:
     return new_number_expr(consume(cursor)->value.number);
@@ -162,6 +154,16 @@ expr_t *parse_postfix(token_cursor_t *cursor) {
   expr_t *expr = parse_primary(cursor);
 
   switch (peek(cursor)->type) {
+  case TOKEN_PAREN_OPEN:
+    consume(cursor);
+    if (expr->type != EXPR_IDENT) {
+      panic("not supported calling: expr=%d\n", expr->type);
+    }
+    expr_t *expr2 = new_expr(EXPR_CALL);
+    expr2->value.call.name = expr->value.ident;
+    expr2->value.call.args = parse_arguments(cursor);
+    expect(cursor, TOKEN_PAREN_CLOSE);
+    return expr2;
   case TOKEN_BRACK_OPEN:
     consume(cursor);
     expr_t *index = parse_expr(cursor);
