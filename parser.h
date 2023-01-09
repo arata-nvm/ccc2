@@ -33,6 +33,8 @@ typedef enum {
   EXPR_NEG,
   EXPR_SHL,
   EXPR_SHR,
+  EXPR_LOGAND,
+  EXPR_LOGOR,
 } exprtype_t;
 
 typedef struct _argument_t argument_t;

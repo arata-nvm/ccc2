@@ -301,6 +301,31 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     break;
   }
 
+  switch (expr->type) {
+  case EXPR_LOGAND: {
+    int skip_label = next_label(ctx);
+    gen_expr(ctx, expr->value.binary.lhs);
+    gen_pop(ctx, "x8");
+    gen(ctx, "  subs x8, x8, 0\n");
+    gen_branch(ctx, "beq", skip_label);
+    gen_expr(ctx, expr->value.binary.rhs);
+    gen_label(ctx, skip_label);
+    return;
+  }
+  case EXPR_LOGOR: {
+    int skip_label = next_label(ctx);
+    gen_expr(ctx, expr->value.binary.lhs);
+    gen_pop(ctx, "x8");
+    gen(ctx, "  subs x8, x8, 0\n");
+    gen_branch(ctx, "bne", skip_label);
+    gen_expr(ctx, expr->value.binary.rhs);
+    gen_label(ctx, skip_label);
+    return;
+  }
+  default:
+    break;
+  }
+
   // binary op
   gen_expr(ctx, expr->value.binary.lhs);
   gen_expr(ctx, expr->value.binary.rhs);

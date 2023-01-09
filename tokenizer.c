@@ -149,7 +149,6 @@ token_t *read_next_token(FILE *fp) {
   }
 
   switch (c) {
-
   case '(':
     return new_token(TOKEN_PAREN_OPEN);
   case ')':
@@ -166,7 +165,6 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_BRACK_OPEN);
   case ']':
     return new_token(TOKEN_BRACK_CLOSE);
-
   case '~':
     return new_token(TOKEN_NOT);
   case '+': {
@@ -216,6 +214,8 @@ token_t *read_next_token(FILE *fp) {
     char c2 = fgetc(fp);
     if (c2 == '=') {
       return new_token(TOKEN_ANDEQ);
+    } else if (c2 == '&') {
+      return new_token(TOKEN_LOGAND);
     }
     ungetc(c2, fp);
     return new_token(TOKEN_AND);
@@ -224,6 +224,8 @@ token_t *read_next_token(FILE *fp) {
     char c2 = fgetc(fp);
     if (c2 == '=') {
       return new_token(TOKEN_OREQ);
+    } else if (c2 == '|') {
+      return new_token(TOKEN_LOGOR);
     }
     ungetc(c2, fp);
     return new_token(TOKEN_OR);

@@ -229,6 +229,12 @@ int main() {
     v39 >>= 2;
     assert(2, v39);
   }
+  {
+    0 || assert(1, 1);
+    1 || assert(1, 0);
+    0 && assert(1, 0);
+    1 && assert(1, 1);
+  }
 
   return 0;
 }

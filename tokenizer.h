@@ -51,6 +51,8 @@ typedef enum {
   TOKEN_XOREQ,
   TOKEN_SHLEQ,
   TOKEN_SHREQ,
+  TOKEN_LOGAND,
+  TOKEN_LOGOR,
 } tokentype_t;
 
 typedef struct _token_t token_t;
