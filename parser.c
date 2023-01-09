@@ -3,6 +3,7 @@
 #include "type.h"
 #include <stdlib.h>
 
+type_t *parse_type(token_cursor_t *cursor);
 expr_t *parse_expr(token_cursor_t *cursor);
 stmt_t *parse_stmt(token_cursor_t *cursor);
 
@@ -515,6 +516,36 @@ stmt_t *parse_block(token_cursor_t *cursor) {
   return stmt;
 }
 
+type_t *parse_struct(token_cursor_t *cursor) {
+  expect(cursor, TOKEN_STRUCT);
+
+  char *tag = NULL;
+  if (peek(cursor)->type == TOKEN_IDENT) {
+    tag = consume(cursor)->value.ident;
+  }
+
+  expect(cursor, TOKEN_BRACE_OPEN);
+
+  type_t *type = parse_type(cursor);
+  char *name = expect(cursor, TOKEN_IDENT)->value.ident;
+  expect(cursor, TOKEN_SEMICOLON);
+
+  struct_member_t *head = new_struct_member(type, name);
+  struct_member_t *cur = head;
+
+  while (peek(cursor)->type != TOKEN_BRACE_CLOSE) {
+    type_t *type = parse_type(cursor);
+    char *name = expect(cursor, TOKEN_IDENT)->value.ident;
+    expect(cursor, TOKEN_SEMICOLON);
+    cur->next = new_struct_member(type, name);
+    cur = cur->next;
+  }
+
+  expect(cursor, TOKEN_BRACE_CLOSE);
+
+  return struct_of(tag, head);
+}
+
 type_t *parse_type(token_cursor_t *cursor) {
   type_t *type;
   switch (peek(cursor)->type) {
@@ -525,6 +556,9 @@ type_t *parse_type(token_cursor_t *cursor) {
   case TOKEN_INT:
     consume(cursor);
     type = new_type(TYPE_INT);
+    break;
+  case TOKEN_STRUCT:
+    type = parse_struct(cursor);
     break;
   default:
     panic("unknown type: token=%d\n", peek(cursor)->type);
@@ -619,6 +653,11 @@ stmt_t *parse_switch(token_cursor_t *cursor) {
   return stmt;
 }
 
+int is_type(token_t *token) {
+  return token->type == TOKEN_CHAR || token->type == TOKEN_INT ||
+         token->type == TOKEN_STRUCT;
+}
+
 stmt_t *parse_stmt(token_cursor_t *cursor) {
   switch (peek(cursor)->type) {
   case TOKEN_RETURN:
@@ -631,9 +670,6 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
     return parse_for(cursor);
   case TOKEN_BRACE_OPEN:
     return parse_block(cursor);
-  case TOKEN_CHAR: // TODO
-  case TOKEN_INT:
-    return parse_define(cursor);
   case TOKEN_BREAK:
     consume(cursor);
     expect(cursor, TOKEN_SEMICOLON);
@@ -644,12 +680,15 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
     return new_stmt(STMT_CONTINUE);
   case TOKEN_SWITCH:
     return parse_switch(cursor);
-  default: {
-    stmt_t *stmt = new_stmt(STMT_EXPR);
-    stmt->value.expr = parse_expr(cursor);
-    expect(cursor, TOKEN_SEMICOLON);
-    return stmt;
-  }
+  default:
+    if (is_type(peek(cursor))) {
+      return parse_define(cursor);
+    } else {
+      stmt_t *stmt = new_stmt(STMT_EXPR);
+      stmt->value.expr = parse_expr(cursor);
+      expect(cursor, TOKEN_SEMICOLON);
+      return stmt;
+    }
   }
 }
 

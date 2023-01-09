@@ -53,6 +53,8 @@ void replace_reserved_tokens(token_t *token) {
     token->type = TOKEN_CASE;
   } else if (!strcmp(ident, "default")) {
     token->type = TOKEN_DEFAULT;
+  } else if (!strcmp(ident, "struct")) {
+    token->type = TOKEN_STRUCT;
   }
 }
 

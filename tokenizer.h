@@ -59,6 +59,7 @@ typedef enum {
   TOKEN_CASE,
   TOKEN_COLON,
   TOKEN_DEFAULT,
+  TOKEN_STRUCT,
 } tokentype_t;
 
 typedef struct _token_t token_t;

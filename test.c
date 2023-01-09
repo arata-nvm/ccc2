@@ -345,6 +345,12 @@ int main() {
     }
     assert(3, v47);
   }
+  {
+    struct {
+      int member1;
+      int member2;
+    } v48;
+  }
 
   return 0;
 }

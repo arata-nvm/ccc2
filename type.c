@@ -21,6 +21,20 @@ type_t *array_of(type_t *elm_type, int len) {
   return type;
 }
 
+struct_member_t *new_struct_member(type_t *type, char *name) {
+  struct_member_t *member = calloc(1, sizeof(struct_member_t));
+  member->type = type;
+  member->name = name;
+  return member;
+}
+
+type_t *struct_of(char *tag, struct_member_t *members) {
+  type_t *type = new_type(TYPE_STRUCT);
+  type->value.struct_.tag = tag;
+  type->value.struct_.members = members;
+  return type;
+}
+
 int type_size(type_t *type) {
   switch (type->kind) {
   case TYPE_CHAR:
@@ -31,6 +45,16 @@ int type_size(type_t *type) {
     return 8;
   case TYPE_ARRAY:
     return type_size(type->value.array.elm) * type->value.array.len;
+  case TYPE_STRUCT: {
+    int size = 0;
+    struct_member_t *cur = type->value.struct_.members;
+    while (cur) {
+      size = align_to(size + type_size(cur->type), type_align(cur->type));
+      cur = cur->next;
+    }
+    return size;
+  }
+
   default:
     panic("unknown type: type=%d\n", type->kind);
   }
@@ -45,6 +69,18 @@ int type_align(type_t *type) {
   case TYPE_PTR:
   case TYPE_ARRAY:
     return 8;
+  case TYPE_STRUCT: {
+    int align = 1;
+    struct_member_t *cur = type->value.struct_.members;
+    while (cur) {
+      int cur_align = type_align(cur->type);
+      if (cur_align > align) {
+        align = cur_align;
+      }
+      cur = cur->next;
+    }
+    return align;
+  }
   default:
     panic("unknown type: type=%d\n", type->kind);
   }
