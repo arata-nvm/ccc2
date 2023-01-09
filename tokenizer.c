@@ -149,14 +149,7 @@ token_t *read_next_token(FILE *fp) {
   }
 
   switch (c) {
-  case '+':
-    return new_token(TOKEN_ADD);
-  case '-':
-    return new_token(TOKEN_SUB);
-  case '*':
-    return new_token(TOKEN_MUL);
-  case '%':
-    return new_token(TOKEN_REM);
+
   case '(':
     return new_token(TOKEN_PAREN_OPEN);
   case ')':
@@ -173,28 +166,86 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_BRACK_OPEN);
   case ']':
     return new_token(TOKEN_BRACK_CLOSE);
-  case '&':
-    return new_token(TOKEN_AND);
-  case '|':
-    return new_token(TOKEN_OR);
-  case '^':
-    return new_token(TOKEN_XOR);
+
   case '~':
     return new_token(TOKEN_NOT);
+  case '+': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_ADDEQ);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_ADD);
+  }
+  case '-': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_SUBEQ);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_SUB);
+  }
+  case '*': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_MULEQ);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_MUL);
+  }
   case '/': {
     char c2 = fgetc(fp);
     if (c2 == '/') {
       read_line_comment(fp);
       return read_next_token(fp);
+    } else if (c2 == '=') {
+      return new_token(TOKEN_DIVEQ);
     }
     ungetc(c2, fp);
     return new_token(TOKEN_DIV);
+  }
+  case '%': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_REMEQ);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_REM);
+  }
+  case '&': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_ANDEQ);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_AND);
+  }
+  case '|': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_OREQ);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_OR);
+  }
+  case '^': {
+    char c2 = fgetc(fp);
+    if (c2 == '=') {
+      return new_token(TOKEN_XOREQ);
+    }
+    ungetc(c2, fp);
+    return new_token(TOKEN_XOR);
   }
   case '<': {
     char c2 = fgetc(fp);
     if (c2 == '=') {
       return new_token(TOKEN_LE);
     } else if (c2 == '<') {
+      char c3 = fgetc(fp);
+      if (c3 == '=') {
+        return new_token(TOKEN_SHLEQ);
+      }
+      ungetc(c3, fp);
       return new_token(TOKEN_SHL);
     }
     ungetc(c2, fp);
@@ -205,6 +256,11 @@ token_t *read_next_token(FILE *fp) {
     if (c2 == '=') {
       return new_token(TOKEN_GE);
     } else if (c2 == '>') {
+      char c3 = fgetc(fp);
+      if (c3 == '=') {
+        return new_token(TOKEN_SHREQ);
+      }
+      ungetc(c3, fp);
       return new_token(TOKEN_SHR);
     }
     ungetc(c2, fp);

@@ -41,6 +41,16 @@ typedef enum {
   TOKEN_NEG,
   TOKEN_SHL,
   TOKEN_SHR,
+  TOKEN_ADDEQ,
+  TOKEN_SUBEQ,
+  TOKEN_MULEQ,
+  TOKEN_DIVEQ,
+  TOKEN_REMEQ,
+  TOKEN_ANDEQ,
+  TOKEN_OREQ,
+  TOKEN_XOREQ,
+  TOKEN_SHLEQ,
+  TOKEN_SHREQ,
 } tokentype_t;
 
 typedef struct _token_t token_t;

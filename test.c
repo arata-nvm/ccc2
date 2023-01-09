@@ -206,6 +206,29 @@ int main() {
   assert(2, 8 >> 2);
   assert(16, 8 << 1);
   assert(32, 8 << 2);
+  {
+    int v39 = 10;
+    v39 += 2;
+    assert(12, v39);
+    v39 -= 2;
+    assert(10, v39);
+    v39 *= 2;
+    assert(20, v39);
+    v39 /= 2;
+    assert(10, v39);
+    v39 %= 3;
+    assert(1, v39);
+    v39 &= 0;
+    assert(0, v39);
+    v39 |= 3;
+    assert(3, v39);
+    v39 ^= 2;
+    assert(1, v39);
+    v39 <<= 3;
+    assert(8, v39);
+    v39 >>= 2;
+    assert(2, v39);
+  }
 
   return 0;
 }

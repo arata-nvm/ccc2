@@ -75,6 +75,13 @@ expr_t *new_binary_expr(exprtype_t type, expr_t *lhs, expr_t *rhs) {
   return expr;
 }
 
+expr_t *new_assign_expr(exprtype_t type, expr_t *dst, expr_t *src) {
+  expr_t *expr = new_expr(type);
+  expr->value.assign.dst = dst;
+  expr->value.assign.src = src;
+  return expr;
+}
+
 argument_t *new_argument(expr_t *value) {
   argument_t *argument = calloc(1, sizeof(argument_t));
   argument->value = value;
@@ -333,14 +340,53 @@ expr_t *parse_or(token_cursor_t *cursor) {
 expr_t *parse_assign(token_cursor_t *cursor) {
   expr_t *expr = parse_or(cursor);
 
-  if (consume_if(cursor, TOKEN_ASSIGN)) {
-    expr_t *expr2 = new_expr(EXPR_ASSIGN);
-    expr2->value.assign.dst = expr;
-    expr2->value.assign.src = parse_or(cursor);
-    return expr2;
+  switch (peek(cursor)->type) {
+  case TOKEN_ASSIGN:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr, parse_or(cursor));
+  case TOKEN_ADDEQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_ADD, expr, parse_or(cursor)));
+  case TOKEN_SUBEQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_SUB, expr, parse_or(cursor)));
+  case TOKEN_MULEQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_MUL, expr, parse_or(cursor)));
+  case TOKEN_DIVEQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_DIV, expr, parse_or(cursor)));
+  case TOKEN_REMEQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_REM, expr, parse_or(cursor)));
+  case TOKEN_ANDEQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_AND, expr, parse_or(cursor)));
+  case TOKEN_OREQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_OR, expr, parse_or(cursor)));
+  case TOKEN_XOREQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_XOR, expr, parse_or(cursor)));
+  case TOKEN_SHLEQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_SHL, expr, parse_or(cursor)));
+  case TOKEN_SHREQ:
+    consume(cursor);
+    return new_assign_expr(EXPR_ASSIGN, expr,
+                           new_binary_expr(EXPR_SHR, expr, parse_or(cursor)));
+  default:
+    return expr;
   }
-
-  return expr;
 }
 
 expr_t *parse_expr(token_cursor_t *cursor) { return parse_assign(cursor); }
