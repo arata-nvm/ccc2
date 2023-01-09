@@ -21,6 +21,7 @@ struct _string_t {
 typedef struct _loop_t loop_t;
 struct _loop_t {
   int break_label;
+  int continue_label;
 
   loop_t *next;
 };

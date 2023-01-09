@@ -578,6 +578,10 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
     consume(cursor);
     expect(cursor, TOKEN_SEMICOLON);
     return new_stmt(STMT_BREAK);
+  case TOKEN_CONTINUE:
+    consume(cursor);
+    expect(cursor, TOKEN_SEMICOLON);
+    return new_stmt(STMT_CONTINUE);
   default: {
     stmt_t *stmt = new_stmt(STMT_EXPR);
     stmt->value.expr = parse_expr(cursor);

@@ -61,9 +61,10 @@ int add_string(codegen_ctx_t *ctx, char *string) {
   return ctx->cur_string;
 }
 
-void push_loop(codegen_ctx_t *ctx, int break_label) {
+void push_loop(codegen_ctx_t *ctx, int break_label, int continue_label) {
   loop_t *loop = calloc(1, sizeof(loop_t));
   loop->break_label = break_label;
+  loop->continue_label = continue_label;
 
   loop->next = ctx->loops;
   ctx->loops = loop;
@@ -493,7 +494,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   case STMT_WHILE: {
     int cond_label = next_label(ctx);
     int end_label = next_label(ctx);
-    push_loop(ctx, end_label);
+    push_loop(ctx, end_label, cond_label);
 
     gen_label(ctx, cond_label);
     gen_expr(ctx, stmt->value.while_.cond);
@@ -510,7 +511,8 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   case STMT_FOR: {
     int cond_label = next_label(ctx);
     int end_label = next_label(ctx);
-    push_loop(ctx, end_label);
+    int loop_label = next_label(ctx);
+    push_loop(ctx, end_label, loop_label);
 
     if (stmt->value.for_.init) {
       gen_stmt(ctx, stmt->value.for_.init);
@@ -524,6 +526,8 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     }
 
     gen_stmt(ctx, stmt->value.for_.body);
+
+    gen_label(ctx, loop_label);
     if (stmt->value.for_.loop) {
       gen_expr(ctx, stmt->value.for_.loop);
     }
@@ -556,6 +560,9 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   }
   case STMT_BREAK:
     gen_branch(ctx, "b", cur_loop(ctx)->break_label);
+    break;
+  case STMT_CONTINUE:
+    gen_branch(ctx, "b", cur_loop(ctx)->continue_label);
     break;
   }
 }

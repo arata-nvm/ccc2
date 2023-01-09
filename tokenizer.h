@@ -54,6 +54,7 @@ typedef enum {
   TOKEN_LOGAND,
   TOKEN_LOGOR,
   TOKEN_BREAK,
+  TOKEN_CONTINUE,
 } tokentype_t;
 
 typedef struct _token_t token_t;

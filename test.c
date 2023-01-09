@@ -258,6 +258,35 @@ int main() {
     }
     assert(10, v41);
   }
+  {
+    int v44 = 0;
+    while (v44 < 10) {
+      v44 += 1;
+
+      if (v44 == 5) {
+        continue;
+      }
+    }
+    assert(10, v44);
+  }
+  {
+    int v42 = 0;
+    for (int v43 = 0; v43 < 10; v43 += 1) {
+      break;
+      v42 += 1;
+    }
+
+    assert(0, v42);
+  }
+  {
+    int v45 = 0;
+    for (int v46 = 0; v46 < 10; v46 += 1) {
+      continue;
+      v45 += 1;
+    }
+
+    assert(0, v45);
+  }
 
   return 0;
 }

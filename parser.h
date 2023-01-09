@@ -76,6 +76,7 @@ typedef enum {
   STMT_BLOCK,
   STMT_DEFINE,
   STMT_BREAK,
+  STMT_CONTINUE,
 } stmttype_t;
 
 typedef struct _stmt_list_t stmt_list_t;
