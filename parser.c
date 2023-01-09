@@ -100,6 +100,13 @@ stmt_list_t *new_stmt_list(stmt_t *stmt) {
   return stmt_list;
 }
 
+stmt_case_t *new_stmt_case(int value, stmt_list_t *body) {
+  stmt_case_t *stmt_case = calloc(1, sizeof(stmt_case_t));
+  stmt_case->value = value;
+  stmt_case->body = body;
+  return stmt_case;
+}
+
 parameter_t *new_parameter(type_t *type, char *name) {
   parameter_t *parameter = calloc(1, sizeof(parameter_t));
   parameter->type = type;
@@ -559,6 +566,59 @@ stmt_t *parse_define(token_cursor_t *cursor) {
   return stmt;
 }
 
+stmt_case_t *parse_case(token_cursor_t *cursor) {
+  int value = 0;
+  if (!consume_if(cursor, TOKEN_DEFAULT)) {
+    expect(cursor, TOKEN_CASE);
+    value = expect(cursor, TOKEN_NUMBER)->value.number;
+  }
+  expect(cursor, TOKEN_COLON);
+
+  stmt_list_t *head = new_stmt_list(parse_stmt(cursor));
+  stmt_list_t *cur = head;
+  while (peek(cursor)->type != TOKEN_CASE &&
+         peek(cursor)->type != TOKEN_DEFAULT &&
+         peek(cursor)->type != TOKEN_BRACE_CLOSE) {
+    cur->next = new_stmt_list(parse_stmt(cursor));
+    cur = cur->next;
+  }
+
+  return new_stmt_case(value, head);
+}
+
+stmt_t *parse_switch(token_cursor_t *cursor) {
+  expect(cursor, TOKEN_SWITCH);
+  expect(cursor, TOKEN_PAREN_OPEN);
+
+  expr_t *value = parse_expr(cursor);
+
+  expect(cursor, TOKEN_PAREN_CLOSE);
+  expect(cursor, TOKEN_BRACE_OPEN);
+
+  stmt_case_t *head = parse_case(cursor);
+  stmt_case_t *cur = head;
+  stmt_case_t *default_case = NULL;
+
+  while (peek(cursor)->type == TOKEN_CASE ||
+         peek(cursor)->type == TOKEN_DEFAULT) {
+    if (peek(cursor)->type == TOKEN_DEFAULT) {
+      default_case = parse_case(cursor);
+      continue;
+    }
+
+    cur->next = parse_case(cursor);
+    cur = cur->next;
+  }
+
+  expect(cursor, TOKEN_BRACE_CLOSE);
+
+  stmt_t *stmt = new_stmt(STMT_SWITCH);
+  stmt->value.switch_.value = value;
+  stmt->value.switch_.cases = head;
+  stmt->value.switch_.default_case = default_case;
+  return stmt;
+}
+
 stmt_t *parse_stmt(token_cursor_t *cursor) {
   switch (peek(cursor)->type) {
   case TOKEN_RETURN:
@@ -582,6 +642,8 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
     consume(cursor);
     expect(cursor, TOKEN_SEMICOLON);
     return new_stmt(STMT_CONTINUE);
+  case TOKEN_SWITCH:
+    return parse_switch(cursor);
   default: {
     stmt_t *stmt = new_stmt(STMT_EXPR);
     stmt->value.expr = parse_expr(cursor);

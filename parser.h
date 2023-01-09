@@ -77,14 +77,24 @@ typedef enum {
   STMT_DEFINE,
   STMT_BREAK,
   STMT_CONTINUE,
+  STMT_SWITCH,
 } stmttype_t;
 
 typedef struct _stmt_list_t stmt_list_t;
+typedef struct _stmt_case_t stmt_case_t;
 typedef struct _stmt_t stmt_t;
 
 struct _stmt_list_t {
   stmt_t *stmt;
   stmt_list_t *next;
+};
+
+struct _stmt_case_t {
+  int value;
+  stmt_list_t *body;
+  int label;
+
+  stmt_case_t *next;
 };
 
 struct _stmt_t {
@@ -113,6 +123,11 @@ struct _stmt_t {
       char *name;
       expr_t *value;
     } define;
+    struct {
+      expr_t *value;
+      stmt_case_t *cases;
+      stmt_case_t *default_case;
+    } switch_;
   } value;
 };
 

@@ -453,6 +453,13 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
   }
 }
 
+void gen_stmt_list(codegen_ctx_t *ctx, stmt_list_t *list) {
+  while (list) {
+    gen_stmt(ctx, list->stmt);
+    list = list->next;
+  }
+}
+
 void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   switch (stmt->type) {
   case STMT_EXPR:
@@ -537,14 +544,9 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     pop_loop(ctx);
     break;
   }
-  case STMT_BLOCK: {
-    stmt_list_t *cur = stmt->value.block;
-    while (cur) {
-      gen_stmt(ctx, cur->stmt);
-      cur = cur->next;
-    }
+  case STMT_BLOCK:
+    gen_stmt_list(ctx, stmt->value.block);
     break;
-  }
   case STMT_DEFINE: {
     char *name = stmt->value.define.name;
     if (find_variable(ctx, name) != NULL) {
@@ -564,6 +566,48 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   case STMT_CONTINUE:
     gen_branch(ctx, "b", cur_loop(ctx)->continue_label);
     break;
+  case STMT_SWITCH: {
+    int merge_label = next_label(ctx);
+    push_loop(ctx, merge_label, -1);
+
+    gen_expr(ctx, stmt->value.switch_.value);
+    stmt_case_t *cur_case = stmt->value.switch_.cases;
+    while (cur_case) {
+      cur_case->label = next_label(ctx);
+      gen_pop(ctx, "x8");
+      gen_push(ctx, "x8"); // save value
+      gen(ctx, "  subs x8, x8, %d\n", cur_case->value);
+      gen_branch(ctx, "beq", cur_case->label);
+
+      cur_case = cur_case->next;
+    }
+
+    stmt_case_t *default_case = stmt->value.switch_.default_case;
+    if (default_case) {
+      default_case->label = next_label(ctx);
+      gen_branch(ctx, "b", default_case->label);
+    }
+    gen_branch(ctx, "b", merge_label);
+
+    cur_case = stmt->value.switch_.cases;
+    while (cur_case) {
+      gen_label(ctx, cur_case->label);
+      gen_pop(ctx, "x8"); // pop value
+      gen_stmt_list(ctx, cur_case->body);
+
+      cur_case = cur_case->next;
+    }
+
+    if (default_case) {
+      gen_label(ctx, default_case->label);
+      gen_pop(ctx, "x8"); // pop value
+      gen_stmt_list(ctx, default_case->body);
+    }
+
+    gen_label(ctx, merge_label);
+    pop_loop(ctx);
+    break;
+  }
   }
 }
 

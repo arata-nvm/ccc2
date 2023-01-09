@@ -55,6 +55,10 @@ typedef enum {
   TOKEN_LOGOR,
   TOKEN_BREAK,
   TOKEN_CONTINUE,
+  TOKEN_SWITCH,
+  TOKEN_CASE,
+  TOKEN_COLON,
+  TOKEN_DEFAULT,
 } tokentype_t;
 
 typedef struct _token_t token_t;

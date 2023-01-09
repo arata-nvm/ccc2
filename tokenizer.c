@@ -47,6 +47,12 @@ void replace_reserved_tokens(token_t *token) {
     token->type = TOKEN_BREAK;
   } else if (!strcmp(ident, "continue")) {
     token->type = TOKEN_CONTINUE;
+  } else if (!strcmp(ident, "switch")) {
+    token->type = TOKEN_SWITCH;
+  } else if (!strcmp(ident, "case")) {
+    token->type = TOKEN_CASE;
+  } else if (!strcmp(ident, "default")) {
+    token->type = TOKEN_DEFAULT;
   }
 }
 
@@ -171,6 +177,8 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_BRACK_CLOSE);
   case '~':
     return new_token(TOKEN_NOT);
+  case ':':
+    return new_token(TOKEN_COLON);
   case '+': {
     char c2 = fgetc(fp);
     if (c2 == '=') {

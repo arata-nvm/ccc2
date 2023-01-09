@@ -287,6 +287,64 @@ int main() {
 
     assert(0, v45);
   }
+  {
+    int v47 = 0;
+
+    v47 = 0;
+    switch (1) {
+    case 1:
+      v47 += 1;
+      break;
+    case 2:
+      v47 += 2;
+      break;
+    default:
+      v47 += 4;
+      break;
+    }
+    assert(1, v47);
+
+    v47 = 0;
+    switch (2) {
+    case 1:
+      v47 += 1;
+      break;
+    case 2:
+      v47 += 2;
+      break;
+    default:
+      v47 += 4;
+      break;
+    }
+    assert(2, v47);
+
+    v47 = 0;
+    switch (3) {
+    case 1:
+      v47 += 1;
+      break;
+    case 2:
+      v47 += 2;
+      break;
+    default:
+      v47 += 4;
+      break;
+    }
+    assert(4, v47);
+
+    v47 = 0;
+    switch (1) {
+    case 1:
+      v47 += 1;
+    case 2:
+      v47 += 2;
+      break;
+    default:
+      v47 += 4;
+      break;
+    }
+    assert(3, v47);
+  }
 
   return 0;
 }
