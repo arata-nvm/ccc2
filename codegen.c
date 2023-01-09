@@ -285,6 +285,17 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen(ctx, "  mov x8, %d\n", type_size(type));
     gen_push(ctx, "x8");
     return;
+  case EXPR_NOT:
+    gen_expr(ctx, expr->value.unary);
+    gen(ctx, "  mvn x8, x8\n");
+    gen_push(ctx, "x8");
+    return;
+  case EXPR_NEG:
+    gen_expr(ctx, expr->value.unary);
+    gen(ctx, "  subs x8, x8, 0\n");
+    gen(ctx, "  cset x8, eq\n");
+    gen_push(ctx, "x8");
+    return;
   }
   default:
     break;
@@ -379,6 +390,17 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen(ctx, "  cset x8, ne\n");
     gen_push(ctx, "x8");
     break;
+  case EXPR_AND:
+    gen(ctx, "  and x8, x8, x9\n");
+    gen_push(ctx, "x8");
+    break;
+  case EXPR_OR:
+    gen(ctx, "  orr x8, x8, x9\n");
+    gen_push(ctx, "x8");
+    break;
+  case EXPR_XOR:
+    gen(ctx, "  eor x8, x8, x9\n");
+    gen_push(ctx, "x8");
   default:
     break;
   }

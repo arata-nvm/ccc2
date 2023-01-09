@@ -28,13 +28,17 @@ typedef enum {
   TOKEN_WHILE,
   TOKEN_FOR,
   TOKEN_COMMA,
-  TOKEN_REF,
   TOKEN_INT,
   TOKEN_SIZEOF,
   TOKEN_BRACK_OPEN,
   TOKEN_BRACK_CLOSE,
   TOKEN_CHAR,
   TOKEN_STRING,
+  TOKEN_AND,
+  TOKEN_OR,
+  TOKEN_NOT,
+  TOKEN_XOR,
+  TOKEN_NEG,
 } tokentype_t;
 
 typedef struct _token_t token_t;

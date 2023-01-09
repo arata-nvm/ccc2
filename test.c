@@ -1,7 +1,8 @@
 int assert(int expect, int actual) {
   if (expect != actual) {
     printf("[NG] %d expected, but got %d\n", expect, actual);
-    exit(1);
+  } else {
+    printf("[OK]\n");
   }
 }
 
@@ -184,6 +185,23 @@ int main() {
     assert(65, s[0]);
     assert(0, s[1]);
   }
+  assert(0, 0 & 0);
+  assert(0, 1 & 0);
+  assert(0, 0 & 1);
+  assert(1, 1 & 1);
+  assert(0, 0 | 0);
+  assert(1, 1 | 0);
+  assert(1, 0 | 1);
+  assert(1, 1 | 1);
+  assert(1, !0);
+  assert(0, !1);
+  assert(1, (~0) & 1);
+  assert(0, (~1) & 1);
+  assert(0, 0 ^ 0);
+  assert(1, 1 ^ 0);
+  assert(1, 0 ^ 1);
+  assert(0, 1 ^ 1);
+
   // hoge
 
   printf("[OK]\n");

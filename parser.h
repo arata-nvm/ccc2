@@ -26,6 +26,11 @@ typedef enum {
   EXPR_REF,
   EXPR_DEREF,
   EXPR_SIZEOF,
+  EXPR_AND,
+  EXPR_OR,
+  EXPR_NOT,
+  EXPR_XOR,
+  EXPR_NEG,
 } exprtype_t;
 
 typedef struct _argument_t argument_t;

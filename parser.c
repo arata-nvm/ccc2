@@ -173,12 +173,18 @@ expr_t *parse_unary(token_cursor_t *cursor) {
   case TOKEN_SUB:
     consume(cursor);
     return new_binary_expr(EXPR_SUB, new_number_expr(0), parse_postfix(cursor));
-  case TOKEN_REF:
+  case TOKEN_AND:
     consume(cursor);
     return new_unary_expr(EXPR_REF, parse_postfix(cursor));
   case TOKEN_MUL:
     consume(cursor);
     return new_unary_expr(EXPR_DEREF, parse_unary(cursor));
+  case TOKEN_NOT:
+    consume(cursor);
+    return new_unary_expr(EXPR_NOT, parse_unary(cursor));
+  case TOKEN_NEG:
+    consume(cursor);
+    return new_unary_expr(EXPR_NEG, parse_unary(cursor));
   case TOKEN_SIZEOF:
     consume(cursor);
     return new_unary_expr(EXPR_SIZEOF, parse_unary(cursor));
@@ -275,13 +281,43 @@ expr_t *parse_equality(token_cursor_t *cursor) {
   }
 }
 
-expr_t *parse_assign(token_cursor_t *cursor) {
+expr_t *parse_and(token_cursor_t *cursor) {
   expr_t *expr = parse_equality(cursor);
+
+  while (consume_if(cursor, TOKEN_AND)) {
+    expr = new_binary_expr(EXPR_AND, expr, parse_equality(cursor));
+  }
+
+  return expr;
+}
+
+expr_t *parse_xor(token_cursor_t *cursor) {
+  expr_t *expr = parse_and(cursor);
+
+  while (consume_if(cursor, TOKEN_XOR)) {
+    expr = new_binary_expr(EXPR_XOR, expr, parse_and(cursor));
+  }
+
+  return expr;
+}
+
+expr_t *parse_or(token_cursor_t *cursor) {
+  expr_t *expr = parse_xor(cursor);
+
+  while (consume_if(cursor, TOKEN_OR)) {
+    expr = new_binary_expr(EXPR_OR, expr, parse_xor(cursor));
+  }
+
+  return expr;
+}
+
+expr_t *parse_assign(token_cursor_t *cursor) {
+  expr_t *expr = parse_or(cursor);
 
   if (consume_if(cursor, TOKEN_ASSIGN)) {
     expr_t *expr2 = new_expr(EXPR_ASSIGN);
     expr2->value.assign.dst = expr;
-    expr2->value.assign.src = parse_equality(cursor);
+    expr2->value.assign.src = parse_or(cursor);
     return expr2;
   }
 

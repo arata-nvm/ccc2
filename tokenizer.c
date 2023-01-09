@@ -169,12 +169,18 @@ token_t *read_next_token(FILE *fp) {
     return new_token(TOKEN_BRACE_CLOSE);
   case ',':
     return new_token(TOKEN_COMMA);
-  case '&':
-    return new_token(TOKEN_REF);
   case '[':
     return new_token(TOKEN_BRACK_OPEN);
   case ']':
     return new_token(TOKEN_BRACK_CLOSE);
+  case '&':
+    return new_token(TOKEN_AND);
+  case '|':
+    return new_token(TOKEN_OR);
+  case '^':
+    return new_token(TOKEN_XOR);
+  case '~':
+    return new_token(TOKEN_NOT);
   case '/': {
     char c2 = fgetc(fp);
     if (c2 == '/') {
@@ -214,7 +220,7 @@ token_t *read_next_token(FILE *fp) {
       return new_token(TOKEN_NE);
     }
     ungetc(c2, fp);
-    break;
+    return new_token(TOKEN_NEG);
   }
   }
 
