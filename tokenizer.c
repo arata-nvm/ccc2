@@ -194,6 +194,8 @@ token_t *read_next_token(FILE *fp) {
     char c2 = fgetc(fp);
     if (c2 == '=') {
       return new_token(TOKEN_LE);
+    } else if (c2 == '<') {
+      return new_token(TOKEN_SHL);
     }
     ungetc(c2, fp);
     return new_token(TOKEN_LT);
@@ -202,6 +204,8 @@ token_t *read_next_token(FILE *fp) {
     char c2 = fgetc(fp);
     if (c2 == '=') {
       return new_token(TOKEN_GE);
+    } else if (c2 == '>') {
+      return new_token(TOKEN_SHR);
     }
     ungetc(c2, fp);
     return new_token(TOKEN_GT);

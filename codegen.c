@@ -401,6 +401,15 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_XOR:
     gen(ctx, "  eor x8, x8, x9\n");
     gen_push(ctx, "x8");
+    break;
+  case EXPR_SHL:
+    gen(ctx, "  lsl x8, x8, x9\n");
+    gen_push(ctx, "x8");
+    break;
+  case EXPR_SHR:
+    gen(ctx, "  asr x8, x8, x9\n");
+    gen_push(ctx, "x8");
+    break;
   default:
     break;
   }

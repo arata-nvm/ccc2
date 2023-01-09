@@ -235,26 +235,45 @@ expr_t *parse_add_sub(token_cursor_t *cursor) {
   }
 }
 
-expr_t *parse_relational(token_cursor_t *cursor) {
+expr_t *parse_shift(token_cursor_t *cursor) {
   expr_t *expr = parse_add_sub(cursor);
+
+  while (1) {
+    switch (peek(cursor)->type) {
+    case TOKEN_SHL:
+      consume(cursor);
+      expr = new_binary_expr(EXPR_SHL, expr, parse_add_sub(cursor));
+      break;
+    case TOKEN_SHR:
+      consume(cursor);
+      expr = new_binary_expr(EXPR_SHR, expr, parse_add_sub(cursor));
+      break;
+    default:
+      return expr;
+    }
+  }
+}
+
+expr_t *parse_relational(token_cursor_t *cursor) {
+  expr_t *expr = parse_shift(cursor);
 
   while (1) {
     switch (peek(cursor)->type) {
     case TOKEN_LT:
       consume(cursor);
-      expr = new_binary_expr(EXPR_LT, expr, parse_add_sub(cursor));
+      expr = new_binary_expr(EXPR_LT, expr, parse_shift(cursor));
       break;
     case TOKEN_LE:
       consume(cursor);
-      expr = new_binary_expr(EXPR_LE, expr, parse_add_sub(cursor));
+      expr = new_binary_expr(EXPR_LE, expr, parse_shift(cursor));
       break;
     case TOKEN_GT:
       consume(cursor);
-      expr = new_binary_expr(EXPR_GT, expr, parse_add_sub(cursor));
+      expr = new_binary_expr(EXPR_GT, expr, parse_shift(cursor));
       break;
     case TOKEN_GE:
       consume(cursor);
-      expr = new_binary_expr(EXPR_GE, expr, parse_add_sub(cursor));
+      expr = new_binary_expr(EXPR_GE, expr, parse_shift(cursor));
       break;
     default:
       return expr;

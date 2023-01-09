@@ -39,6 +39,8 @@ typedef enum {
   TOKEN_NOT,
   TOKEN_XOR,
   TOKEN_NEG,
+  TOKEN_SHL,
+  TOKEN_SHR,
 } tokentype_t;
 
 typedef struct _token_t token_t;

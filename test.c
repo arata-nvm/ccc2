@@ -201,9 +201,12 @@ int main() {
   assert(1, 1 ^ 0);
   assert(1, 0 ^ 1);
   assert(0, 1 ^ 1);
+  assert(4, 8 >> 1);
+  assert(2, 8 >> 2);
+  assert(16, 8 << 1);
+  assert(32, 8 << 2);
 
   // hoge
 
-  printf("[OK]\n");
   return 0;
 }
