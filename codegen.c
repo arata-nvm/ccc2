@@ -574,6 +574,10 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
     gen(ctx, "  mov sp, x29\n");
     gen(ctx, "  ldp x29, x30, [sp], 0x100\n");
     gen(ctx, "  ret\n");
+    break;
+  case GSTMT_FUNC_DECL:
+    // do nothing
+    break;
   }
 }
 

@@ -116,6 +116,7 @@ struct _stmt_t {
 
 typedef enum {
   GSTMT_FUNC,
+  GSTMT_FUNC_DECL,
 } global_stmttype_t;
 
 typedef struct _parameter_t parameter_t;

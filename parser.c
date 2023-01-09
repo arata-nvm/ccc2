@@ -612,6 +612,12 @@ global_stmt_t *parse_global_stmt(token_cursor_t *cursor) {
   expect(cursor, TOKEN_PAREN_OPEN);
   gstmt->value.func.params = parse_parameter(cursor);
   expect(cursor, TOKEN_PAREN_CLOSE);
+
+  if (consume_if(cursor, TOKEN_SEMICOLON)) {
+    gstmt->type = GSTMT_FUNC_DECL;
+    return gstmt;
+  }
+
   gstmt->value.func.body = parse_stmt(cursor);
   return gstmt;
 }
