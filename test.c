@@ -181,10 +181,11 @@ int main() {
     assert(2, v37[1]);
   }
   {
-    char *s = "A";
-    assert(65, s[0]);
-    assert(0, s[1]);
+    char *v38 = "A";
+    assert(65, v38[0]);
+    assert(0, v38[1]);
   }
+  // hoge
   assert(0, 0 & 0);
   assert(0, 1 & 0);
   assert(0, 0 & 1);
@@ -205,8 +206,6 @@ int main() {
   assert(2, 8 >> 2);
   assert(16, 8 << 1);
   assert(32, 8 << 2);
-
-  // hoge
 
   return 0;
 }
