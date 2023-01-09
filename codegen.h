@@ -18,11 +18,19 @@ struct _string_t {
   string_t *next;
 };
 
+typedef struct _loop_t loop_t;
+struct _loop_t {
+  int break_label;
+
+  loop_t *next;
+};
+
 typedef struct {
   FILE *fp;
 
   variable_t *variables;
   string_t *strings;
+  loop_t *loops;
 
   char *cur_func_name;
 

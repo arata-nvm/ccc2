@@ -61,6 +61,18 @@ int add_string(codegen_ctx_t *ctx, char *string) {
   return ctx->cur_string;
 }
 
+void push_loop(codegen_ctx_t *ctx, int break_label) {
+  loop_t *loop = calloc(1, sizeof(loop_t));
+  loop->break_label = break_label;
+
+  loop->next = ctx->loops;
+  ctx->loops = loop;
+}
+
+loop_t *cur_loop(codegen_ctx_t *ctx) { return ctx->loops; }
+
+void pop_loop(codegen_ctx_t *ctx) { ctx->loops = ctx->loops->next; }
+
 int next_label(codegen_ctx_t *ctx) {
   ctx->cur_label++;
   return ctx->cur_label;
@@ -481,6 +493,8 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   case STMT_WHILE: {
     int cond_label = next_label(ctx);
     int end_label = next_label(ctx);
+    push_loop(ctx, end_label);
+
     gen_label(ctx, cond_label);
     gen_expr(ctx, stmt->value.while_.cond);
     gen(ctx, "  subs x8, x8, 0\n");
@@ -490,11 +504,14 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     gen_branch(ctx, "b", cond_label);
 
     gen_label(ctx, end_label);
+    pop_loop(ctx);
     break;
   }
   case STMT_FOR: {
     int cond_label = next_label(ctx);
     int end_label = next_label(ctx);
+    push_loop(ctx, end_label);
+
     if (stmt->value.for_.init) {
       gen_stmt(ctx, stmt->value.for_.init);
     }
@@ -513,6 +530,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     gen_branch(ctx, "b", cond_label);
 
     gen_label(ctx, end_label);
+    pop_loop(ctx);
     break;
   }
   case STMT_BLOCK: {
@@ -536,6 +554,9 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     }
     break;
   }
+  case STMT_BREAK:
+    gen_branch(ctx, "b", cur_loop(ctx)->break_label);
+    break;
   }
 }
 

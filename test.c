@@ -237,6 +237,27 @@ int main() {
     0 && assert(1, 0);
     1 && assert(1, 1);
   }
+  {
+    int v40 = 0;
+    while (v40 < 10) {
+      v40 += 1;
+
+      if (v40 == 5) {
+        break;
+      }
+    }
+    assert(5, v40);
+  }
+  {
+    int v41 = 0;
+    while (v41 < 10) {
+      v41 += 1;
+      while (1) {
+        break;
+      }
+    }
+    assert(10, v41);
+  }
 
   return 0;
 }

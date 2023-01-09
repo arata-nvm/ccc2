@@ -53,6 +53,7 @@ typedef enum {
   TOKEN_SHREQ,
   TOKEN_LOGAND,
   TOKEN_LOGOR,
+  TOKEN_BREAK,
 } tokentype_t;
 
 typedef struct _token_t token_t;

@@ -560,7 +560,6 @@ stmt_t *parse_define(token_cursor_t *cursor) {
 }
 
 stmt_t *parse_stmt(token_cursor_t *cursor) {
-  stmt_t *stmt;
   switch (peek(cursor)->type) {
   case TOKEN_RETURN:
     return parse_return(cursor);
@@ -575,12 +574,16 @@ stmt_t *parse_stmt(token_cursor_t *cursor) {
   case TOKEN_CHAR: // TODO
   case TOKEN_INT:
     return parse_define(cursor);
-  default:
-    stmt = new_stmt(STMT_EXPR);
+  case TOKEN_BREAK:
+    consume(cursor);
+    expect(cursor, TOKEN_SEMICOLON);
+    return new_stmt(STMT_BREAK);
+  default: {
+    stmt_t *stmt = new_stmt(STMT_EXPR);
     stmt->value.expr = parse_expr(cursor);
     expect(cursor, TOKEN_SEMICOLON);
     return stmt;
-    break;
+  }
   }
 }
 
