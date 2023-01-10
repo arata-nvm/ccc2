@@ -134,4 +134,8 @@ int is_ptr(type_t *type) {
   return type->kind == TYPE_PTR || type->kind == TYPE_ARRAY;
 }
 
+int is_incomlete(type_t *type) {
+  return type->kind == TYPE_STRUCT && type->value.struct_.members == NULL;
+}
+
 int align_to(int n, int align) { return (n + align - 1) & ~(align - 1); }

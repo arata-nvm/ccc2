@@ -26,12 +26,20 @@ struct _loop_t {
   loop_t *next;
 };
 
+typedef struct _defined_type_t defined_type_t;
+struct _defined_type_t {
+  type_t *type;
+
+  defined_type_t *next;
+};
+
 typedef struct {
   FILE *fp;
 
   variable_t *variables;
   string_t *strings;
   loop_t *loops;
+  defined_type_t *types;
 
   char *cur_func_name;
 

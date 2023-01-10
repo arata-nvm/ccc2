@@ -59,4 +59,6 @@ int is_integer(type_t *type);
 
 int is_ptr(type_t *type);
 
+int is_incomlete(type_t *type);
+
 int align_to(int n, int align);

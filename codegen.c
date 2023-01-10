@@ -74,6 +74,30 @@ loop_t *cur_loop(codegen_ctx_t *ctx) { return ctx->loops; }
 
 void pop_loop(codegen_ctx_t *ctx) { ctx->loops = ctx->loops->next; }
 
+void define_type(codegen_ctx_t *ctx, type_t *type) {
+  defined_type_t *defined_type = calloc(1, sizeof(defined_type_t));
+  defined_type->type = type;
+
+  defined_type->next = ctx->types;
+  ctx->types = defined_type;
+}
+
+type_t *find_type(codegen_ctx_t *ctx, char *tag) {
+  defined_type_t *cur = ctx->types;
+  while (cur) {
+    if (!strcmp(cur->type->value.struct_.tag, tag)) {
+      return cur->type;
+    }
+    cur = cur->next;
+  }
+
+  return NULL;
+}
+
+type_t *complete_type(codegen_ctx_t *ctx, type_t *type) {
+  return find_type(ctx, type->value.struct_.tag);
+}
+
 int next_label(codegen_ctx_t *ctx) {
   ctx->cur_label++;
   return ctx->cur_label;
@@ -605,7 +629,11 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     if (find_variable(ctx, name) != NULL) {
       panic("variable '%s' already defined\n", name);
     }
-    variable_t *var = add_variable(ctx, stmt->value.define.type, name);
+    type_t *type = stmt->value.define.type;
+    if (is_incomlete(type)) {
+      type = complete_type(ctx, type);
+    }
+    variable_t *var = add_variable(ctx, type, name);
     if (stmt->value.define.value) {
       gen_expr(ctx, stmt->value.define.value);
       gen_var_addr(ctx, var);
@@ -671,6 +699,11 @@ void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params) {
       panic("cannot use > 7 arguments\n");
     }
 
+    type_t *type = params->type;
+    if (is_incomlete(type)) {
+      type = complete_type(ctx, type);
+    }
+
     variable_t *var = add_variable(ctx, params->type, params->name);
     gen_push(ctx, arg_regs[i]);
     gen_var_addr(ctx, var);
@@ -702,6 +735,9 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
     break;
   case GSTMT_FUNC_DECL:
     // do nothing
+    break;
+  case GSTMT_STRUCT:
+    define_type(ctx, gstmt->value.struct_);
     break;
   }
 }

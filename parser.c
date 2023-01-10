@@ -570,7 +570,9 @@ type_t *parse_struct(token_cursor_t *cursor) {
     tag = consume(cursor)->value.ident;
   }
 
-  expect(cursor, TOKEN_BRACE_OPEN);
+  if (!consume_if(cursor, TOKEN_BRACE_OPEN)) {
+    return struct_of(tag, NULL);
+  }
 
   type_t *type = parse_type(cursor);
   char *name = expect(cursor, TOKEN_IDENT)->value.ident;
@@ -760,8 +762,18 @@ parameter_t *parse_parameter(token_cursor_t *cursor) {
 }
 
 global_stmt_t *parse_global_stmt(token_cursor_t *cursor) {
-  global_stmt_t *gstmt = new_global_stmt(GSTMT_FUNC);
-  gstmt->value.func.ret_type = parse_type(cursor);
+  global_stmt_t *gstmt;
+
+  type_t *type = parse_type(cursor);
+  if (type->kind == TYPE_STRUCT && peek(cursor)->type != TOKEN_IDENT) {
+    expect(cursor, TOKEN_SEMICOLON);
+    gstmt = new_global_stmt(GSTMT_STRUCT);
+    gstmt->value.struct_ = type;
+    return gstmt;
+  }
+
+  gstmt = new_global_stmt(GSTMT_FUNC);
+  gstmt->value.func.ret_type = type;
   gstmt->value.func.name = expect(cursor, TOKEN_IDENT)->value.ident;
   expect(cursor, TOKEN_PAREN_OPEN);
   gstmt->value.func.params = parse_parameter(cursor);
@@ -773,6 +785,7 @@ global_stmt_t *parse_global_stmt(token_cursor_t *cursor) {
   }
 
   gstmt->value.func.body = parse_stmt(cursor);
+
   return gstmt;
 }
 

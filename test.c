@@ -1,3 +1,8 @@
+struct type1_t {
+  int member1;
+  char member2;
+};
+
 int assert(int expect, int actual);
 
 int assert(int expect, int actual) {
@@ -364,6 +369,13 @@ int main() {
     v49.member2 = 2;
     assert(1, v49.member1);
     assert(2, v49.member2);
+  }
+  {
+    struct type1_t v50;
+    v50.member1 = 1;
+    v50.member2 = 2;
+    assert(1, v50.member1);
+    assert(2, v50.member2);
   }
 
   return 0;

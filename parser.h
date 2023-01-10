@@ -147,6 +147,7 @@ struct _stmt_t {
 typedef enum {
   GSTMT_FUNC,
   GSTMT_FUNC_DECL,
+  GSTMT_STRUCT,
 } global_stmttype_t;
 
 typedef struct _parameter_t parameter_t;
@@ -168,6 +169,7 @@ struct _global_stmt_t {
       parameter_t *params;
       stmt_t *body;
     } func;
+    type_t *struct_;
   } value;
 
   global_stmt_t *next;
