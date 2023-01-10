@@ -1,6 +1,7 @@
 #include "type.h"
 #include "error.h"
 #include <stdlib.h>
+#include <string.h>
 
 type_t *new_type(typekind_t kind) {
   type_t *type = calloc(1, sizeof(type_t));
@@ -28,10 +29,39 @@ struct_member_t *new_struct_member(type_t *type, char *name) {
   return member;
 }
 
+int calc_size(struct_member_t *members) {
+  int offset = 0;
+  struct_member_t *cur = members;
+  while (cur) {
+    offset = align_to(offset, type_align(cur->type));
+    cur->offset = offset;
+    offset += type_size(cur->type);
+
+    cur = cur->next;
+  }
+  return offset;
+}
+
+int calc_align(struct_member_t *members) {
+  int align = 1;
+  struct_member_t *cur = members;
+  while (cur) {
+    int cur_align = type_align(cur->type);
+    if (cur_align > align) {
+      align = cur_align;
+    }
+    cur = cur->next;
+  }
+  return align;
+}
+
 type_t *struct_of(char *tag, struct_member_t *members) {
   type_t *type = new_type(TYPE_STRUCT);
   type->value.struct_.tag = tag;
   type->value.struct_.members = members;
+  type->value.struct_.size = calc_size(members);
+  type->value.struct_.align = calc_align(members);
+
   return type;
 }
 
@@ -45,16 +75,8 @@ int type_size(type_t *type) {
     return 8;
   case TYPE_ARRAY:
     return type_size(type->value.array.elm) * type->value.array.len;
-  case TYPE_STRUCT: {
-    int size = 0;
-    struct_member_t *cur = type->value.struct_.members;
-    while (cur) {
-      size = align_to(size + type_size(cur->type), type_align(cur->type));
-      cur = cur->next;
-    }
-    return size;
-  }
-
+  case TYPE_STRUCT:
+    return type->value.struct_.size;
   default:
     panic("unknown type: type=%d\n", type->kind);
   }
@@ -69,18 +91,8 @@ int type_align(type_t *type) {
   case TYPE_PTR:
   case TYPE_ARRAY:
     return 8;
-  case TYPE_STRUCT: {
-    int align = 1;
-    struct_member_t *cur = type->value.struct_.members;
-    while (cur) {
-      int cur_align = type_align(cur->type);
-      if (cur_align > align) {
-        align = cur_align;
-      }
-      cur = cur->next;
-    }
-    return align;
-  }
+  case TYPE_STRUCT:
+    return type->value.struct_.align;
   default:
     panic("unknown type: type=%d\n", type->kind);
   }
@@ -95,6 +107,23 @@ type_t *type_deref(type_t *type) {
   default:
     panic("cannot dereference: type=%d\n", type->kind);
   }
+}
+
+struct_member_t *find_member(type_t *type, char *name) {
+  if (type->kind != TYPE_STRUCT) {
+    panic("type must be struct: type=%d\n", type->kind);
+  }
+
+  struct_member_t *cur = type->value.struct_.members;
+  while (cur) {
+    if (!strcmp(cur->name, name)) {
+      return cur;
+    }
+
+    cur = cur->next;
+  }
+
+  return NULL;
 }
 
 int is_integer(type_t *type) {

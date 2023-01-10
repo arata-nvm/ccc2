@@ -350,6 +350,20 @@ int main() {
       int member1;
       int member2;
     } v48;
+    v48.member1 = 1;
+    v48.member2 = 2;
+    assert(1, v48.member1);
+    assert(2, v48.member2);
+  }
+  {
+    struct {
+      int member1;
+      char member2;
+    } v49;
+    v49.member1 = 1;
+    v49.member2 = 2;
+    assert(1, v49.member1);
+    assert(2, v49.member2);
   }
 
   return 0;

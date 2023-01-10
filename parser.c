@@ -177,6 +177,13 @@ expr_t *parse_postfix(token_cursor_t *cursor) {
     expr_t *index = parse_expr(cursor);
     expect(cursor, TOKEN_BRACK_CLOSE);
     return new_unary_expr(EXPR_DEREF, new_binary_expr(EXPR_ADD, expr, index));
+  case TOKEN_MEMBER:
+    consume(cursor);
+    char *name = expect(cursor, TOKEN_IDENT)->value.ident;
+    expr_t *expr3 = new_expr(EXPR_MEMBER);
+    expr3->value.member.expr = expr;
+    expr3->value.member.name = name;
+    return expr3;
   default:
     return expr;
   }

@@ -35,6 +35,7 @@ typedef enum {
   EXPR_SHR,
   EXPR_LOGAND,
   EXPR_LOGOR,
+  EXPR_MEMBER,
 } exprtype_t;
 
 typedef struct _argument_t argument_t;
@@ -64,6 +65,10 @@ struct _expr_t {
       char *name;
       argument_t *args;
     } call;
+    struct {
+      expr_t *expr;
+      char *name;
+    } member;
   } value;
 };
 

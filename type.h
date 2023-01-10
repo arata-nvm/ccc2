@@ -14,6 +14,7 @@ typedef struct _type_t type_t;
 struct _struct_member_t {
   type_t *type;
   char *name;
+  int offset;
 
   struct_member_t *next;
 };
@@ -29,6 +30,9 @@ struct _type_t {
     struct {
       char *tag;
       struct_member_t *members;
+
+      int size;
+      int align;
     } struct_;
   } value;
 };
@@ -48,6 +52,8 @@ int type_size(type_t *type);
 int type_align(type_t *type);
 
 type_t *type_deref(type_t *type);
+
+struct_member_t *find_member(type_t *type, char *name);
 
 int is_integer(type_t *type);
 

@@ -149,24 +149,6 @@ void gen_str_addr(codegen_ctx_t *ctx, int str_index) {
   gen_push(ctx, "x8");
 }
 
-void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
-  switch (expr->type) {
-  case EXPR_IDENT: {
-    variable_t *var = find_variable(ctx, expr->value.ident);
-    if (var == NULL) {
-      panic("unknown variable '%s'\n", expr->value.ident);
-    }
-    gen_var_addr(ctx, var);
-    break;
-  case EXPR_DEREF:
-    gen_expr(ctx, expr->value.unary);
-    break;
-  }
-  default:
-    panic("cannot generate lvalue: expr=%d\n", expr->type);
-  }
-}
-
 type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_NUMBER:
@@ -229,8 +211,54 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   }
   case EXPR_SIZEOF:
     return new_type(TYPE_INT);
+  case EXPR_MEMBER: {
+    expr_t *mexpr = expr->value.member.expr;
+    char *name = expr->value.member.name;
+
+    type_t *mtype = infer_expr_type(ctx, mexpr);
+    struct_member_t *member = find_member(mtype, name);
+    if (member == NULL) {
+      panic("unknown member: type=%d\n, name=%s\n", mtype->kind, name);
+    }
+
+    return member->type;
+  }
   }
   panic("unreachable\n");
+}
+
+void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
+  switch (expr->type) {
+  case EXPR_IDENT: {
+    variable_t *var = find_variable(ctx, expr->value.ident);
+    if (var == NULL) {
+      panic("unknown variable '%s'\n", expr->value.ident);
+    }
+    gen_var_addr(ctx, var);
+    break;
+  case EXPR_DEREF:
+    gen_expr(ctx, expr->value.unary);
+    break;
+  case EXPR_MEMBER: {
+    expr_t *mexpr = expr->value.member.expr;
+    char *name = expr->value.member.name;
+
+    type_t *mtype = infer_expr_type(ctx, mexpr);
+    struct_member_t *member = find_member(mtype, name);
+    if (member == NULL) {
+      panic("unknown member: type=%d\n, name=%s\n", mtype->kind, name);
+    }
+
+    gen_lvalue(ctx, mexpr);
+    gen_pop(ctx, "x8");
+    gen(ctx, "  add x8, x8, %d\n", member->offset);
+    gen_push(ctx, "x8");
+    break;
+  }
+  }
+  default:
+    panic("cannot generate lvalue: expr=%d\n", expr->type);
+  }
 }
 
 void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
@@ -280,6 +308,10 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen_push(ctx, "x0");
     return;
   }
+  case EXPR_MEMBER:
+    gen_lvalue(ctx, expr);
+    gen_load(ctx, infer_expr_type(ctx, expr));
+    return;
   default:
     break;
   }
