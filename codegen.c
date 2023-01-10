@@ -198,6 +198,15 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_GE:
   case EXPR_EQ:
   case EXPR_NE:
+  case EXPR_AND:
+  case EXPR_OR:
+  case EXPR_NOT:
+  case EXPR_XOR:
+  case EXPR_NEG:
+  case EXPR_SHL:
+  case EXPR_SHR:
+  case EXPR_LOGAND:
+  case EXPR_LOGOR:
     return new_type(TYPE_INT); // TODO
   case EXPR_ASSIGN:
     return infer_expr_type(ctx, expr->value.assign.dst);
