@@ -160,6 +160,12 @@ global_stmt_t *new_global_stmt(global_stmttype_t type) {
   return gstmt;
 }
 
+program_t *new_program(global_stmt_t *body) {
+  program_t *program = calloc(1, sizeof(program_t));
+  program->body = body;
+  return program;
+}
+
 argument_t *parse_arguments(token_cursor_t *cursor) {
   if (peek(cursor)->type == TOKEN_PAREN_CLOSE) {
     return NULL;
@@ -789,7 +795,7 @@ global_stmt_t *parse_global_stmt(token_cursor_t *cursor) {
   return gstmt;
 }
 
-global_stmt_t *parse(token_t *token) {
+program_t *parse(token_t *token) {
   token_cursor_t *cursor = new_token_cursor(token);
 
   global_stmt_t *head = parse_global_stmt(cursor);
@@ -799,5 +805,5 @@ global_stmt_t *parse(token_t *token) {
     cur = cur->next;
   }
 
-  return head;
+  return new_program(head);
 }

@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
   }
 
   token_t *token = tokenize(fp);
-  global_stmt_t *program = parse(token);
+  program_t *program = parse(token);
   gen_code(program, stdout);
 
   return 0;

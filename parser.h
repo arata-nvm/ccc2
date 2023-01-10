@@ -175,4 +175,8 @@ struct _global_stmt_t {
   global_stmt_t *next;
 };
 
-global_stmt_t *parse(token_t *token);
+typedef struct {
+  global_stmt_t *body;
+} program_t;
+
+program_t *parse(token_t *token);

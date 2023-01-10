@@ -48,4 +48,4 @@ typedef struct {
   int cur_string;
 } codegen_ctx_t;
 
-void gen_code(global_stmt_t *gstmt, FILE *fp);
+void gen_code(program_t *program, FILE *fp);

@@ -763,9 +763,9 @@ void gen_data(codegen_ctx_t *ctx) {
   }
 }
 
-void gen_code(global_stmt_t *gstmt, FILE *fp) {
+void gen_code(program_t *program, FILE *fp) {
   codegen_ctx_t *ctx = new_codegen_ctx(fp);
 
-  gen_text(ctx, gstmt);
+  gen_text(ctx, program->body);
   gen_data(ctx);
 }
