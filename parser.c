@@ -7,6 +7,45 @@ type_t *parse_type(token_cursor_t *cursor);
 expr_t *parse_expr(token_cursor_t *cursor);
 stmt_t *parse_stmt(token_cursor_t *cursor);
 
+int is_unary_expr(exprtype_t type) {
+  switch (type) {
+  case EXPR_REF:
+  case EXPR_DEREF:
+  case EXPR_SIZEOF:
+  case EXPR_NOT:
+  case EXPR_NEG:
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+int is_binary_expr(exprtype_t type) {
+  switch (type) {
+  case EXPR_ADD:
+  case EXPR_SUB:
+  case EXPR_MUL:
+  case EXPR_DIV:
+  case EXPR_REM:
+  case EXPR_LT:
+  case EXPR_LE:
+  case EXPR_GT:
+  case EXPR_GE:
+  case EXPR_EQ:
+  case EXPR_NE:
+  case EXPR_AND:
+  case EXPR_OR:
+  case EXPR_XOR:
+  case EXPR_SHL:
+  case EXPR_SHR:
+  case EXPR_LOGAND:
+  case EXPR_LOGOR:
+    return 1;
+  default:
+    return 0;
+  }
+}
+
 token_cursor_t *new_token_cursor(token_t *token) {
   token_cursor_t *cursor = calloc(1, sizeof(token_cursor_t));
   cursor->cur_token = token;

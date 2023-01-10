@@ -7,9 +7,22 @@ typedef struct {
 } token_cursor_t;
 
 typedef enum {
+  // special
   EXPR_NUMBER,
   EXPR_STRING,
   EXPR_IDENT,
+  EXPR_ASSIGN,
+  EXPR_CALL,
+  EXPR_MEMBER,
+
+  // unary
+  EXPR_REF,
+  EXPR_DEREF,
+  EXPR_SIZEOF,
+  EXPR_NOT,
+  EXPR_NEG,
+
+  // binary
   EXPR_ADD,
   EXPR_SUB,
   EXPR_MUL,
@@ -21,22 +34,17 @@ typedef enum {
   EXPR_GE,
   EXPR_EQ,
   EXPR_NE,
-  EXPR_ASSIGN,
-  EXPR_CALL,
-  EXPR_REF,
-  EXPR_DEREF,
-  EXPR_SIZEOF,
   EXPR_AND,
   EXPR_OR,
-  EXPR_NOT,
   EXPR_XOR,
-  EXPR_NEG,
   EXPR_SHL,
   EXPR_SHR,
   EXPR_LOGAND,
   EXPR_LOGOR,
-  EXPR_MEMBER,
 } exprtype_t;
+
+int is_unary_expr(exprtype_t type);
+int is_binary_expr(exprtype_t type);
 
 typedef struct _argument_t argument_t;
 typedef struct _expr_t expr_t;

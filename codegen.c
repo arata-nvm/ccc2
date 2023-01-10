@@ -270,16 +270,16 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
   }
 }
 
-void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
+void gen_special_expr(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_NUMBER:
     gen(ctx, "  mov x8, %d\n", expr->value.number);
     gen_push(ctx, "x8");
-    return;
+    break;
   case EXPR_STRING: {
     int str_index = add_string(ctx, expr->value.string);
     gen_str_addr(ctx, str_index);
-    return;
+    break;
   }
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
@@ -290,14 +290,14 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     if (var->type->kind != TYPE_ARRAY) {
       gen_load(ctx, var->type);
     }
-    return;
+    break;
   }
   case EXPR_ASSIGN:
     gen_expr(ctx, expr->value.assign.src);
     gen_lvalue(ctx, expr->value.assign.dst);
     gen_store(ctx, infer_expr_type(ctx, expr));
     gen_push(ctx, "x8"); // FIXME
-    return;
+    break;
   case EXPR_CALL: {
     int i = 0;
     argument_t *cur_arg = expr->value.call.args;
@@ -315,46 +315,49 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
 
     gen(ctx, "  bl %s\n", expr->value.ident);
     gen_push(ctx, "x0");
-    return;
+    break;
   }
   case EXPR_MEMBER:
     gen_lvalue(ctx, expr);
     gen_load(ctx, infer_expr_type(ctx, expr));
-    return;
-  default:
     break;
+  default:
+    panic("unreachable: expr=%d\n", expr->type);
   }
+}
 
-  // unary op
+void gen_unary_expr(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_REF:
     gen_lvalue(ctx, expr->value.unary);
-    return;
+    break;
   case EXPR_DEREF:
     gen_expr(ctx, expr->value.unary);
     gen_load(ctx, infer_expr_type(ctx, expr));
-    return;
+    break;
   case EXPR_SIZEOF: {
     type_t *type = infer_expr_type(ctx, expr->value.unary);
     gen(ctx, "  mov x8, %d\n", type_size(type));
     gen_push(ctx, "x8");
-    return;
+    break;
+  }
   case EXPR_NOT:
     gen_expr(ctx, expr->value.unary);
     gen(ctx, "  mvn x8, x8\n");
     gen_push(ctx, "x8");
-    return;
+    break;
   case EXPR_NEG:
     gen_expr(ctx, expr->value.unary);
     gen(ctx, "  subs x8, x8, 0\n");
     gen(ctx, "  cset x8, eq\n");
     gen_push(ctx, "x8");
-    return;
-  }
-  default:
     break;
+  default:
+    panic("unreachable: expr=%d\n", expr->type);
   }
+}
 
+void gen_binary_expr(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_LOGAND: {
     int skip_label = next_label(ctx);
@@ -380,7 +383,6 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     break;
   }
 
-  // binary op
   gen_expr(ctx, expr->value.binary.lhs);
   gen_expr(ctx, expr->value.binary.rhs);
   gen_pop(ctx, "x9");
@@ -490,7 +492,17 @@ void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen_push(ctx, "x8");
     break;
   default:
-    break;
+    panic("unreachable: expr=%d\n", expr->type);
+  }
+}
+
+void gen_expr(codegen_ctx_t *ctx, expr_t *expr) {
+  if (is_unary_expr(expr->type)) {
+    gen_unary_expr(ctx, expr);
+  } else if (is_binary_expr(expr->type)) {
+    gen_binary_expr(ctx, expr);
+  } else {
+    gen_special_expr(ctx, expr);
   }
 }
 
