@@ -4,7 +4,7 @@
 
 typedef struct {
   token_t *cur_token;
-} token_cursor_t;
+} parser_ctx_t;
 
 typedef enum {
   // special
