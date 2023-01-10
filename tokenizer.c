@@ -19,6 +19,8 @@ int read_char(FILE *fp) {
   return c;
 }
 
+int is_ident_head_char(char c) { return isalpha(c) || c == '_'; }
+
 int is_ident_char(char c) { return isalnum(c) || c == '_'; }
 
 void replace_reserved_tokens(token_t *token) {
@@ -151,7 +153,7 @@ token_t *read_next_token(FILE *fp) {
     return read_number_token(fp);
   }
 
-  if (isalpha(c)) {
+  if (is_ident_head_char(c)) {
     ungetc(c, fp);
     return read_ident_token(fp);
   }
