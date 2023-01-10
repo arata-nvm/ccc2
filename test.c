@@ -1,4 +1,5 @@
-struct type1_t {
+typedef struct _type1_t type1_t;
+struct _type1_t {
   int member1;
   char member2;
 };
@@ -371,11 +372,18 @@ int main() {
     assert(2, v49.member2);
   }
   {
-    struct type1_t v50;
+    struct _type1_t v50;
     v50.member1 = 1;
     v50.member2 = 2;
     assert(1, v50.member1);
     assert(2, v50.member2);
+  }
+  {
+    type1_t v51;
+    v51.member1 = 1;
+    v51.member2 = 2;
+    assert(1, v51.member1);
+    assert(2, v51.member2);
   }
 
   return 0;

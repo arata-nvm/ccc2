@@ -2,8 +2,17 @@
 #include "tokenizer.h"
 #include "type.h"
 
+typedef struct _typedef_t typedef_t;
+struct _typedef_t {
+  type_t *type;
+  char *name;
+
+  typedef_t *next;
+};
+
 typedef struct {
   token_t *cur_token;
+  typedef_t *typedefs;
 } parser_ctx_t;
 
 typedef enum {
@@ -148,6 +157,7 @@ typedef enum {
   GSTMT_FUNC,
   GSTMT_FUNC_DECL,
   GSTMT_STRUCT,
+  GSTMT_TYPEDEF,
 } global_stmttype_t;
 
 typedef struct _parameter_t parameter_t;

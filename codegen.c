@@ -733,11 +733,12 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
     gen(ctx, "  ldp x29, x30, [sp], 0x100\n");
     gen(ctx, "  ret\n");
     break;
-  case GSTMT_FUNC_DECL:
-    // do nothing
-    break;
   case GSTMT_STRUCT:
     define_type(ctx, gstmt->value.struct_);
+    break;
+  case GSTMT_FUNC_DECL:
+  case GSTMT_TYPEDEF:
+    // do nothing
     break;
   }
 }

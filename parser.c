@@ -2,6 +2,7 @@
 #include "error.h"
 #include "type.h"
 #include <stdlib.h>
+#include <string.h>
 
 type_t *parse_type(parser_ctx_t *ctx);
 expr_t *parse_expr(parser_ctx_t *ctx);
@@ -50,6 +51,27 @@ parser_ctx_t *new_parser_ctx(token_t *token) {
   parser_ctx_t *ctx = calloc(1, sizeof(parser_ctx_t));
   ctx->cur_token = token;
   return ctx;
+}
+
+void add_typedef(parser_ctx_t *ctx, type_t *type, char *name) {
+  typedef_t *typedef_ = calloc(1, sizeof(typedef_t));
+  typedef_->type = type;
+  typedef_->name = name;
+
+  typedef_->next = ctx->typedefs;
+  ctx->typedefs = typedef_;
+}
+
+typedef_t *find_typedef(parser_ctx_t *ctx, char *name) {
+  typedef_t *cur = ctx->typedefs;
+  while (cur) {
+    if (!strcmp(cur->name, name)) {
+      return cur;
+    }
+    cur = cur->next;
+  }
+
+  return NULL;
 }
 
 token_t *peek(parser_ctx_t *ctx) { return ctx->cur_token; }
@@ -605,6 +627,11 @@ type_t *parse_type(parser_ctx_t *ctx) {
   case TOKEN_STRUCT:
     type = parse_struct(ctx);
     break;
+  case TOKEN_IDENT: {
+    char *type_name = consume(ctx)->value.ident;
+    type = find_typedef(ctx, type_name)->type;
+    break;
+  }
   default:
     panic("unknown type: token=%d\n", peek(ctx)->type);
   }
@@ -696,9 +723,10 @@ stmt_t *parse_switch(parser_ctx_t *ctx) {
   return stmt;
 }
 
-int is_type(token_t *token) {
+int is_type(parser_ctx_t *ctx, token_t *token) {
   return token->type == TOKEN_CHAR || token->type == TOKEN_INT ||
-         token->type == TOKEN_STRUCT;
+         token->type == TOKEN_STRUCT ||
+         (token->type == TOKEN_IDENT && find_typedef(ctx, token->value.ident));
 }
 
 stmt_t *parse_stmt(parser_ctx_t *ctx) {
@@ -724,7 +752,7 @@ stmt_t *parse_stmt(parser_ctx_t *ctx) {
   case TOKEN_SWITCH:
     return parse_switch(ctx);
   default:
-    if (is_type(peek(ctx))) {
+    if (is_type(ctx, peek(ctx))) {
       return parse_define(ctx);
     } else {
       stmt_t *stmt = new_stmt(STMT_EXPR);
@@ -756,8 +784,24 @@ parameter_t *parse_parameter(parser_ctx_t *ctx) {
   return head;
 }
 
+global_stmt_t *parse_typedef(parser_ctx_t *ctx) {
+  expect(ctx, TOKEN_TYPEDEF);
+
+  type_t *type = parse_type(ctx);
+  char *name = expect(ctx, TOKEN_IDENT)->value.ident;
+  expect(ctx, TOKEN_SEMICOLON);
+
+  add_typedef(ctx, type, name);
+
+  return new_global_stmt(GSTMT_TYPEDEF);
+}
+
 global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
   global_stmt_t *gstmt;
+
+  if (peek(ctx)->type == TOKEN_TYPEDEF) {
+    return parse_typedef(ctx);
+  }
 
   type_t *type = parse_type(ctx);
   if (type->kind == TYPE_STRUCT && peek(ctx)->type != TOKEN_IDENT) {
@@ -791,7 +835,9 @@ program_t *parse(token_t *token) {
   global_stmt_t *cur = head;
   while (peek(ctx)->type != TOKEN_EOF) {
     cur->next = parse_global_stmt(ctx);
-    cur = cur->next;
+    if (cur->next) {
+      cur = cur->next;
+    }
   }
 
   return new_program(head);
