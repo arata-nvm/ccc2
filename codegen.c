@@ -227,7 +227,7 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     type_t *mtype = infer_expr_type(ctx, mexpr);
     struct_member_t *member = find_member(mtype, name);
     if (member == NULL) {
-      panic("unknown member: type=%d\n, name=%s\n", mtype->kind, name);
+      panic("unknown member: type=%d, name=%s\n", mtype->kind, name);
     }
 
     return member->type;
@@ -255,7 +255,7 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
     type_t *mtype = infer_expr_type(ctx, mexpr);
     struct_member_t *member = find_member(mtype, name);
     if (member == NULL) {
-      panic("unknown member: type=%d\n, name=%s\n", mtype->kind, name);
+      panic("unknown member: type=%d, name=%s\n", mtype->kind, name);
     }
 
     gen_lvalue(ctx, mexpr);
