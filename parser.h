@@ -65,6 +65,7 @@ struct _argument_t {
 
 struct _expr_t {
   exprtype_t type;
+  pos_t *pos;
   union {
     int number;
     char *string;
@@ -121,6 +122,7 @@ struct _stmt_case_t {
 
 struct _stmt_t {
   stmttype_t type;
+  pos_t *pos;
   union {
     expr_t *expr;
     expr_t *ret;
@@ -172,6 +174,7 @@ struct _parameter_t {
 
 struct _global_stmt_t {
   global_stmttype_t type;
+  pos_t *pos;
   union {
     struct {
       type_t *ret_type;

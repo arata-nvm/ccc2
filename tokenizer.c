@@ -4,21 +4,50 @@
 #include <stdlib.h>
 #include <string.h>
 
+pos_t *new_pos(int line, int column) {
+  pos_t *pos = calloc(1, sizeof(pos_t));
+  pos->line = line;
+  pos->column = column;
+  return pos;
+}
+
+pos_t *copy_pos(pos_t *pos) { return new_pos(pos->line, pos->column); }
+
+char *pos_to_string(pos_t *pos) {
+  char *buf = malloc(8);
+  snprintf(buf, 8, "%d:%d", pos->line, pos->column);
+  return buf;
+}
+
 tokenizer_ctx_t *new_tokenizer_ctx(FILE *fp) {
   tokenizer_ctx_t *ctx = calloc(1, sizeof(tokenizer_ctx_t));
   ctx->fp = fp;
+  ctx->cur_pos = new_pos(1, 1);
   return ctx;
 }
 
-token_t *new_token(tokentype_t type) {
+token_t *new_token(tokentype_t type, pos_t *pos) {
   token_t *token = calloc(1, sizeof(token_t));
   token->type = type;
+  token->pos = pos;
   return token;
 }
 
-int read_char(tokenizer_ctx_t *ctx) { return fgetc(ctx->fp); }
+int read_char(tokenizer_ctx_t *ctx) {
+  int c = fgetc(ctx->fp);
+  if (c != '\n') {
+    ctx->cur_pos->column++;
+  } else {
+    ctx->cur_pos->line++;
+    ctx->cur_pos->column = 1;
+  }
+  return c;
+}
 
-void unread_char(tokenizer_ctx_t *ctx, int c) { ungetc(c, ctx->fp); }
+void unread_char(tokenizer_ctx_t *ctx, int c) {
+  ungetc(c, ctx->fp);
+  ctx->cur_pos->column--; // TODO
+}
 
 void skip_whitespaces(tokenizer_ctx_t *ctx) {
   int c = read_char(ctx);
@@ -72,6 +101,7 @@ void replace_reserved_tokens(token_t *token) {
 }
 
 token_t *read_ident_token(tokenizer_ctx_t *ctx) {
+  pos_t *pos = copy_pos(ctx->cur_pos);
   char buf[256];
   int buf_index = 0;
 
@@ -89,7 +119,7 @@ token_t *read_ident_token(tokenizer_ctx_t *ctx) {
   buf[buf_index] = 0;
   buf_index++;
 
-  token_t *token = new_token(TOKEN_IDENT);
+  token_t *token = new_token(TOKEN_IDENT, pos);
   token->value.ident = calloc(1, buf_index);
   strncpy(token->value.ident, buf, buf_index);
 
@@ -99,6 +129,7 @@ token_t *read_ident_token(tokenizer_ctx_t *ctx) {
 }
 
 token_t *read_number_token(tokenizer_ctx_t *ctx) {
+  pos_t *pos = copy_pos(ctx->cur_pos);
   char buf[256];
   int buf_index = 0;
 
@@ -115,12 +146,13 @@ token_t *read_number_token(tokenizer_ctx_t *ctx) {
   unread_char(ctx, c);
   buf[buf_index] = 0;
 
-  token_t *token = new_token(TOKEN_NUMBER);
+  token_t *token = new_token(TOKEN_NUMBER, pos);
   token->value.number = atoi(buf);
   return token;
 }
 
 token_t *read_string_token(tokenizer_ctx_t *ctx) {
+  pos_t *pos = copy_pos(ctx->cur_pos);
   char buf[256];
   int buf_index = 0;
 
@@ -128,7 +160,7 @@ token_t *read_string_token(tokenizer_ctx_t *ctx) {
   while (1) {
     c = read_char(ctx);
     if (c == EOF) {
-      panic("missing terminating '\"'\n");
+      error(pos, "missing terminating '\"'\n");
     }
     if (c == '"') {
       break;
@@ -140,7 +172,7 @@ token_t *read_string_token(tokenizer_ctx_t *ctx) {
   buf[buf_index] = 0;
   buf_index++;
 
-  token_t *token = new_token(TOKEN_STRING);
+  token_t *token = new_token(TOKEN_STRING, pos);
   token->value.ident = calloc(1, buf_index);
   strncpy(token->value.string, buf, buf_index);
 
@@ -154,10 +186,12 @@ void read_line_comment(tokenizer_ctx_t *ctx) {
 
 token_t *read_next_token(tokenizer_ctx_t *ctx) {
   skip_whitespaces(ctx);
+
+  pos_t *pos = copy_pos(ctx->cur_pos);
   int c = read_char(ctx);
 
   if (c == EOF) {
-    return new_token(TOKEN_EOF);
+    return new_token(TOKEN_EOF, pos);
   }
 
   if (isdigit(c)) {
@@ -176,50 +210,50 @@ token_t *read_next_token(tokenizer_ctx_t *ctx) {
 
   switch (c) {
   case '(':
-    return new_token(TOKEN_PAREN_OPEN);
+    return new_token(TOKEN_PAREN_OPEN, pos);
   case ')':
-    return new_token(TOKEN_PAREN_CLOSE);
+    return new_token(TOKEN_PAREN_CLOSE, pos);
   case ';':
-    return new_token(TOKEN_SEMICOLON);
+    return new_token(TOKEN_SEMICOLON, pos);
   case '{':
-    return new_token(TOKEN_BRACE_OPEN);
+    return new_token(TOKEN_BRACE_OPEN, pos);
   case '}':
-    return new_token(TOKEN_BRACE_CLOSE);
+    return new_token(TOKEN_BRACE_CLOSE, pos);
   case ',':
-    return new_token(TOKEN_COMMA);
+    return new_token(TOKEN_COMMA, pos);
   case '[':
-    return new_token(TOKEN_BRACK_OPEN);
+    return new_token(TOKEN_BRACK_OPEN, pos);
   case ']':
-    return new_token(TOKEN_BRACK_CLOSE);
+    return new_token(TOKEN_BRACK_CLOSE, pos);
   case '~':
-    return new_token(TOKEN_NOT);
+    return new_token(TOKEN_NOT, pos);
   case ':':
-    return new_token(TOKEN_COLON);
+    return new_token(TOKEN_COLON, pos);
   case '.':
-    return new_token(TOKEN_MEMBER);
+    return new_token(TOKEN_MEMBER, pos);
   case '+': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_ADDEQ);
+      return new_token(TOKEN_ADDEQ, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_ADD);
+    return new_token(TOKEN_ADD, pos);
   }
   case '-': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_SUBEQ);
+      return new_token(TOKEN_SUBEQ, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_SUB);
+    return new_token(TOKEN_SUB, pos);
   }
   case '*': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_MULEQ);
+      return new_token(TOKEN_MULEQ, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_MUL);
+    return new_token(TOKEN_MUL, pos);
   }
   case '/': {
     char c2 = read_char(ctx);
@@ -227,96 +261,96 @@ token_t *read_next_token(tokenizer_ctx_t *ctx) {
       read_line_comment(ctx);
       return read_next_token(ctx);
     } else if (c2 == '=') {
-      return new_token(TOKEN_DIVEQ);
+      return new_token(TOKEN_DIVEQ, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_DIV);
+    return new_token(TOKEN_DIV, pos);
   }
   case '%': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_REMEQ);
+      return new_token(TOKEN_REMEQ, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_REM);
+    return new_token(TOKEN_REM, pos);
   }
   case '&': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_ANDEQ);
+      return new_token(TOKEN_ANDEQ, pos);
     } else if (c2 == '&') {
-      return new_token(TOKEN_LOGAND);
+      return new_token(TOKEN_LOGAND, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_AND);
+    return new_token(TOKEN_AND, pos);
   }
   case '|': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_OREQ);
+      return new_token(TOKEN_OREQ, pos);
     } else if (c2 == '|') {
-      return new_token(TOKEN_LOGOR);
+      return new_token(TOKEN_LOGOR, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_OR);
+    return new_token(TOKEN_OR, pos);
   }
   case '^': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_XOREQ);
+      return new_token(TOKEN_XOREQ, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_XOR);
+    return new_token(TOKEN_XOR, pos);
   }
   case '<': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_LE);
+      return new_token(TOKEN_LE, pos);
     } else if (c2 == '<') {
       char c3 = read_char(ctx);
       if (c3 == '=') {
-        return new_token(TOKEN_SHLEQ);
+        return new_token(TOKEN_SHLEQ, pos);
       }
       unread_char(ctx, c3);
-      return new_token(TOKEN_SHL);
+      return new_token(TOKEN_SHL, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_LT);
+    return new_token(TOKEN_LT, pos);
   }
   case '>': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_GE);
+      return new_token(TOKEN_GE, pos);
     } else if (c2 == '>') {
       char c3 = read_char(ctx);
       if (c3 == '=') {
-        return new_token(TOKEN_SHREQ);
+        return new_token(TOKEN_SHREQ, pos);
       }
       unread_char(ctx, c3);
-      return new_token(TOKEN_SHR);
+      return new_token(TOKEN_SHR, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_GT);
+    return new_token(TOKEN_GT, pos);
   }
   case '=': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_EQ);
+      return new_token(TOKEN_EQ, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_ASSIGN);
+    return new_token(TOKEN_ASSIGN, pos);
   }
   case '!': {
     char c2 = read_char(ctx);
     if (c2 == '=') {
-      return new_token(TOKEN_NE);
+      return new_token(TOKEN_NE, pos);
     }
     unread_char(ctx, c2);
-    return new_token(TOKEN_NEG);
+    return new_token(TOKEN_NEG, pos);
   }
   }
 
-  panic("unexpected char '%c'\n", c);
+  error(pos, "unexpected char '%c'\n", c);
 }
 
 token_t *tokenize(FILE *fp) {

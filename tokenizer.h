@@ -2,7 +2,15 @@
 #include <stdio.h>
 
 typedef struct {
+  int line;
+  int column;
+} pos_t;
+
+char *pos_to_string(pos_t *pos);
+
+typedef struct {
   FILE *fp;
+  pos_t *cur_pos;
 } tokenizer_ctx_t;
 
 typedef enum {
@@ -71,6 +79,7 @@ typedef enum {
 typedef struct _token_t token_t;
 struct _token_t {
   tokentype_t type;
+  pos_t *pos;
   union {
     int number;
     char *ident;

@@ -126,7 +126,7 @@ void gen_pop(codegen_ctx_t *ctx, char *reg) {
   gen(ctx, "  ldr %s, [sp], 16\n", reg);
 }
 
-void gen_load(codegen_ctx_t *ctx, type_t *type) {
+void gen_load(codegen_ctx_t *ctx, type_t *type, pos_t *pos) {
   gen_pop(ctx, "x8");
   switch (type_size(type)) {
   case 1:
@@ -139,12 +139,12 @@ void gen_load(codegen_ctx_t *ctx, type_t *type) {
     gen(ctx, "  ldr x8, [x8]\n");
     break;
   default:
-    panic("cannot load: type=%d\n", type->kind);
+    error(pos, "cannot load: type=%d\n", type->kind);
   }
   gen_push(ctx, "x8");
 }
 
-void gen_store(codegen_ctx_t *ctx, type_t *type) {
+void gen_store(codegen_ctx_t *ctx, type_t *type, pos_t *pos) {
   gen_pop(ctx, "x8"); // dst
   gen_pop(ctx, "x9"); // src
   switch (type_size(type)) {
@@ -158,7 +158,7 @@ void gen_store(codegen_ctx_t *ctx, type_t *type) {
     gen(ctx, "  str x9, [x8]\n");
     break;
   default:
-    panic("cannot store: type=%d\n", type->kind);
+    error(pos, "cannot store: type=%d\n", type->kind);
   }
 }
 
@@ -182,7 +182,7 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var == NULL) {
-      panic("unknown variable '%s'\n", expr->value.ident);
+      error(expr->pos, "unknown variable '%s'\n", expr->value.ident);
     }
 
     return var->type;
@@ -197,8 +197,8 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     } else if (is_integer(lhs_type) && is_ptr(rhs_type)) {
       return rhs_type;
     }
-    panic("invalid add operation: lhs=%d, rhs=%d\n", lhs_type->kind,
-          rhs_type->kind);
+    error(expr->pos, "invalid add operation: lhs=%d, rhs=%d\n",
+          pos_to_string(expr->pos), lhs_type->kind, rhs_type->kind);
   }
   case EXPR_SUB: {
     type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
@@ -210,8 +210,8 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     } else if (is_ptr(lhs_type) && is_ptr(rhs_type)) {
       return new_type(TYPE_INT);
     }
-    panic("invalid sub operation: lhs=%d, rhs=%d\n", lhs_type->kind,
-          rhs_type->kind);
+    error(expr->pos, "invalid sub operation: lhs=%d, rhs=%d\n",
+          pos_to_string(expr->pos), lhs_type->kind, rhs_type->kind);
   }
   case EXPR_MUL:
   case EXPR_DIV:
@@ -251,13 +251,13 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     type_t *mtype = infer_expr_type(ctx, mexpr);
     struct_member_t *member = find_member(mtype, name);
     if (member == NULL) {
-      panic("unknown member: type=%d, name=%s\n", mtype->kind, name);
+      error(expr->pos, "unknown member: type=%d, name=%s\n", mtype->kind, name);
     }
 
     return member->type;
   }
   }
-  panic("unreachable\n");
+  error(expr->pos, "unreachable\n");
 }
 
 void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
@@ -265,7 +265,7 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var == NULL) {
-      panic("unknown variable '%s'\n", expr->value.ident);
+      error(expr->pos, "unknown variable '%s'\n", expr->value.ident);
     }
     gen_var_addr(ctx, var);
     break;
@@ -279,7 +279,7 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
     type_t *mtype = infer_expr_type(ctx, mexpr);
     struct_member_t *member = find_member(mtype, name);
     if (member == NULL) {
-      panic("unknown member: type=%d, name=%s\n", mtype->kind, name);
+      error(expr->pos, "unknown member: type=%d, name=%s\n", mtype->kind, name);
     }
 
     gen_lvalue(ctx, mexpr);
@@ -290,7 +290,7 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
   }
   }
   default:
-    panic("cannot generate lvalue: expr=%d\n", expr->type);
+    error(expr->pos, "cannot generate lvalue: expr=%d\n", expr->type);
   }
 }
 
@@ -308,18 +308,18 @@ void gen_special_expr(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var == NULL) {
-      panic("unknown variable '%s'\n", expr->value.ident);
+      error(expr->pos, "unknown variable '%s'\n", expr->value.ident);
     }
     gen_var_addr(ctx, var);
     if (var->type->kind != TYPE_ARRAY) {
-      gen_load(ctx, var->type);
+      gen_load(ctx, var->type, expr->pos);
     }
     break;
   }
   case EXPR_ASSIGN:
     gen_expr(ctx, expr->value.assign.src);
     gen_lvalue(ctx, expr->value.assign.dst);
-    gen_store(ctx, infer_expr_type(ctx, expr));
+    gen_store(ctx, infer_expr_type(ctx, expr), expr->pos);
     gen_push(ctx, "x8"); // FIXME
     break;
   case EXPR_CALL: {
@@ -327,7 +327,7 @@ void gen_special_expr(codegen_ctx_t *ctx, expr_t *expr) {
     argument_t *cur_arg = expr->value.call.args;
     while (cur_arg) {
       if (i > 7) {
-        panic("cannot use > 7 arguments\n");
+        error(expr->pos, "cannot use > 7 arguments\n");
       }
 
       gen_expr(ctx, cur_arg->value);
@@ -343,10 +343,10 @@ void gen_special_expr(codegen_ctx_t *ctx, expr_t *expr) {
   }
   case EXPR_MEMBER:
     gen_lvalue(ctx, expr);
-    gen_load(ctx, infer_expr_type(ctx, expr));
+    gen_load(ctx, infer_expr_type(ctx, expr), expr->pos);
     break;
   default:
-    panic("unreachable: expr=%d\n", expr->type);
+    error(expr->pos, "unreachable: expr=%d\n", expr->type);
   }
 }
 
@@ -357,7 +357,7 @@ void gen_unary_expr(codegen_ctx_t *ctx, expr_t *expr) {
     break;
   case EXPR_DEREF:
     gen_expr(ctx, expr->value.unary);
-    gen_load(ctx, infer_expr_type(ctx, expr));
+    gen_load(ctx, infer_expr_type(ctx, expr), expr->pos);
     break;
   case EXPR_SIZEOF: {
     type_t *type = infer_expr_type(ctx, expr->value.unary);
@@ -377,7 +377,7 @@ void gen_unary_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen_push(ctx, "x8");
     break;
   default:
-    panic("unreachable: expr=%d\n", expr->type);
+    error(expr->pos, "unreachable: expr=%d\n", expr->type);
   }
 }
 
@@ -425,8 +425,8 @@ void gen_binary_expr(codegen_ctx_t *ctx, expr_t *expr) {
       gen(ctx, "  mov x10, %d\n", type_size(type_deref(rhs_type)));
       gen(ctx, "  mul x8, x8, x10\n");
     } else {
-      panic("invalid add operation: lhs=%d, rhs=%d\n", lhs_type->kind,
-            rhs_type->kind);
+      error(expr->pos, "invalid add operation: lhs=%d, rhs=%d\n",
+            lhs_type->kind, rhs_type->kind);
     }
     gen(ctx, "  add x8, x8, x9\n");
     gen_push(ctx, "x8");
@@ -446,8 +446,8 @@ void gen_binary_expr(codegen_ctx_t *ctx, expr_t *expr) {
       gen(ctx, "  mov x9, %d\n", type_size(type_deref(lhs_type)));
       gen(ctx, "  udiv x8, x8, x9\n");
     } else {
-      panic("invalid add operation: lhs=%d, rhs=%d\n", lhs_type->kind,
-            rhs_type->kind);
+      error(expr->pos, "invalid a dd operation: lhs=%d, rhs=%d\n",
+            lhs_type->kind, rhs_type->kind);
     }
     gen_push(ctx, "x8");
     break;
@@ -516,7 +516,7 @@ void gen_binary_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen_push(ctx, "x8");
     break;
   default:
-    panic("unreachable: expr=%d\n", expr->type);
+    error(expr->pos, "unreachab le: expr=%d\n", expr->type);
   }
 }
 
@@ -627,7 +627,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   case STMT_DEFINE: {
     char *name = stmt->value.define.name;
     if (find_variable(ctx, name) != NULL) {
-      panic("variable '%s' already defined\n", name);
+      error(stmt->pos, "variable '%s' already defined\n", name);
     }
     type_t *type = stmt->value.define.type;
     if (is_incomlete(type)) {
@@ -637,7 +637,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     if (stmt->value.define.value) {
       gen_expr(ctx, stmt->value.define.value);
       gen_var_addr(ctx, var);
-      gen_store(ctx, var->type);
+      gen_store(ctx, var->type, stmt->pos);
     }
     break;
   }
@@ -692,11 +692,11 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   }
 }
 
-void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params) {
+void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params, pos_t *pos) {
   int i = 0;
   while (params) {
     if (i > 7) {
-      panic("cannot use > 7 arguments\n");
+      error(pos, "cannot use > 7 arguments\n");
     }
 
     type_t *type = params->type;
@@ -707,7 +707,7 @@ void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params) {
     variable_t *var = add_variable(ctx, params->type, params->name);
     gen_push(ctx, arg_regs[i]);
     gen_var_addr(ctx, var);
-    gen_store(ctx, var->type);
+    gen_store(ctx, var->type, pos);
 
     params = params->next;
     i++;
@@ -724,7 +724,7 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
     gen(ctx, "  stp x29, x30, [sp, -0x100]!\n"); // TODO
     gen(ctx, "  mov x29, sp\n");
 
-    gen_func_parameter(ctx, gstmt->value.func.params);
+    gen_func_parameter(ctx, gstmt->value.func.params, gstmt->pos);
     gen_stmt(ctx, gstmt->value.func.body);
 
     gen(ctx, ".L.%s.ret:\n", ctx->cur_func_name);

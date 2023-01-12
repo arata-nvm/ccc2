@@ -95,50 +95,52 @@ token_t *consume_if(parser_ctx_t *ctx, tokentype_t type) {
 token_t *expect(parser_ctx_t *ctx, tokentype_t type) {
   token_t *cur_token = consume(ctx);
   if (cur_token->type != type) {
-    panic("unexpected token: expected=%d, actual=%d\n", type, cur_token->type);
+    error(cur_token->pos, "unexpected token: expected=%d, actual=%d\n", type,
+          cur_token->type);
   }
   return cur_token;
 }
 
-expr_t *new_expr(exprtype_t type) {
+expr_t *new_expr(exprtype_t type, pos_t *pos) {
   expr_t *expr = calloc(1, sizeof(expr_t));
   expr->type = type;
+  expr->pos = pos;
   return expr;
 }
 
-expr_t *new_number_expr(int value) {
-  expr_t *expr = new_expr(EXPR_NUMBER);
+expr_t *new_number_expr(int value, pos_t *pos) {
+  expr_t *expr = new_expr(EXPR_NUMBER, pos);
   expr->value.number = value;
   return expr;
 }
 
-expr_t *new_string_expr(char *string) {
-  expr_t *expr = new_expr(EXPR_STRING);
+expr_t *new_string_expr(char *string, pos_t *pos) {
+  expr_t *expr = new_expr(EXPR_STRING, pos);
   expr->value.string = string;
   return expr;
 }
 
-expr_t *new_ident_expr(char *name) {
-  expr_t *expr = new_expr(EXPR_IDENT);
+expr_t *new_ident_expr(char *name, pos_t *pos) {
+  expr_t *expr = new_expr(EXPR_IDENT, pos);
   expr->value.ident = name;
   return expr;
 }
 
-expr_t *new_unary_expr(exprtype_t type, expr_t *expr2) {
-  expr_t *expr = new_expr(type);
+expr_t *new_unary_expr(exprtype_t type, expr_t *expr2, pos_t *pos) {
+  expr_t *expr = new_expr(type, pos);
   expr->value.unary = expr2;
   return expr;
 }
 
-expr_t *new_binary_expr(exprtype_t type, expr_t *lhs, expr_t *rhs) {
-  expr_t *expr = new_expr(type);
+expr_t *new_binary_expr(exprtype_t type, expr_t *lhs, expr_t *rhs, pos_t *pos) {
+  expr_t *expr = new_expr(type, pos);
   expr->value.binary.lhs = lhs;
   expr->value.binary.rhs = rhs;
   return expr;
 }
 
-expr_t *new_assign_expr(exprtype_t type, expr_t *dst, expr_t *src) {
-  expr_t *expr = new_expr(type);
+expr_t *new_assign_expr(exprtype_t type, expr_t *dst, expr_t *src, pos_t *pos) {
+  expr_t *expr = new_expr(type, pos);
   expr->value.assign.dst = dst;
   expr->value.assign.src = src;
   return expr;
@@ -150,9 +152,10 @@ argument_t *new_argument(expr_t *value) {
   return argument;
 }
 
-stmt_t *new_stmt(stmttype_t type) {
+stmt_t *new_stmt(stmttype_t type, pos_t *pos) {
   stmt_t *stmt = calloc(1, sizeof(stmt_t));
   stmt->type = type;
+  stmt->pos = pos;
   return stmt;
 }
 
@@ -176,9 +179,10 @@ parameter_t *new_parameter(type_t *type, char *name) {
   return parameter;
 }
 
-global_stmt_t *new_global_stmt(global_stmttype_t type) {
+global_stmt_t *new_global_stmt(global_stmttype_t type, pos_t *pos) {
   global_stmt_t *gstmt = calloc(1, sizeof(global_stmt_t));
   gstmt->type = type;
+  gstmt->pos = pos;
   return gstmt;
 }
 
@@ -206,6 +210,7 @@ argument_t *parse_arguments(parser_ctx_t *ctx) {
 }
 
 expr_t *parse_primary(parser_ctx_t *ctx) {
+  pos_t *pos = peek(ctx)->pos;
   switch (peek(ctx)->type) {
   case TOKEN_PAREN_OPEN:
     consume(ctx);
@@ -214,27 +219,28 @@ expr_t *parse_primary(parser_ctx_t *ctx) {
     return expr;
   case TOKEN_IDENT: {
     char *name = consume(ctx)->value.ident;
-    return new_ident_expr(name);
+    return new_ident_expr(name, pos);
   }
   case TOKEN_NUMBER:
-    return new_number_expr(consume(ctx)->value.number);
+    return new_number_expr(consume(ctx)->value.number, pos);
   case TOKEN_STRING:
-    return new_string_expr(consume(ctx)->value.string);
+    return new_string_expr(consume(ctx)->value.string, pos);
   default:
-    panic("unexpected token: token=%d\n", peek(ctx)->type);
+    error(pos, "unexpected token: token=%d\n", peek(ctx)->type);
   }
 }
 
 expr_t *parse_postfix(parser_ctx_t *ctx) {
   expr_t *expr = parse_primary(ctx);
 
+  pos_t *pos = peek(ctx)->pos;
   switch (peek(ctx)->type) {
   case TOKEN_PAREN_OPEN:
     consume(ctx);
     if (expr->type != EXPR_IDENT) {
-      panic("not supported calling: expr=%d\n", expr->type);
+      error(pos, "not supported calling: expr=%d\n", expr->type);
     }
-    expr_t *expr2 = new_expr(EXPR_CALL);
+    expr_t *expr2 = new_expr(EXPR_CALL, pos);
     expr2->value.call.name = expr->value.ident;
     expr2->value.call.args = parse_arguments(ctx);
     expect(ctx, TOKEN_PAREN_CLOSE);
@@ -243,11 +249,12 @@ expr_t *parse_postfix(parser_ctx_t *ctx) {
     consume(ctx);
     expr_t *index = parse_expr(ctx);
     expect(ctx, TOKEN_BRACK_CLOSE);
-    return new_unary_expr(EXPR_DEREF, new_binary_expr(EXPR_ADD, expr, index));
+    return new_unary_expr(EXPR_DEREF,
+                          new_binary_expr(EXPR_ADD, expr, index, pos), pos);
   case TOKEN_MEMBER:
     consume(ctx);
     char *name = expect(ctx, TOKEN_IDENT)->value.ident;
-    expr_t *expr3 = new_expr(EXPR_MEMBER);
+    expr_t *expr3 = new_expr(EXPR_MEMBER, pos);
     expr3->value.member.expr = expr;
     expr3->value.member.name = name;
     return expr3;
@@ -257,28 +264,31 @@ expr_t *parse_postfix(parser_ctx_t *ctx) {
 }
 
 expr_t *parse_unary(parser_ctx_t *ctx) {
+  pos_t *pos = peek(ctx)->pos;
+
   switch (peek(ctx)->type) {
   case TOKEN_ADD:
     consume(ctx);
     return parse_postfix(ctx);
   case TOKEN_SUB:
     consume(ctx);
-    return new_binary_expr(EXPR_SUB, new_number_expr(0), parse_postfix(ctx));
+    return new_binary_expr(EXPR_SUB, new_number_expr(0, pos),
+                           parse_postfix(ctx), pos);
   case TOKEN_AND:
     consume(ctx);
-    return new_unary_expr(EXPR_REF, parse_postfix(ctx));
+    return new_unary_expr(EXPR_REF, parse_postfix(ctx), pos);
   case TOKEN_MUL:
     consume(ctx);
-    return new_unary_expr(EXPR_DEREF, parse_unary(ctx));
+    return new_unary_expr(EXPR_DEREF, parse_unary(ctx), pos);
   case TOKEN_NOT:
     consume(ctx);
-    return new_unary_expr(EXPR_NOT, parse_unary(ctx));
+    return new_unary_expr(EXPR_NOT, parse_unary(ctx), pos);
   case TOKEN_NEG:
     consume(ctx);
-    return new_unary_expr(EXPR_NEG, parse_unary(ctx));
+    return new_unary_expr(EXPR_NEG, parse_unary(ctx), pos);
   case TOKEN_SIZEOF:
     consume(ctx);
-    return new_unary_expr(EXPR_SIZEOF, parse_unary(ctx));
+    return new_unary_expr(EXPR_SIZEOF, parse_unary(ctx), pos);
   default:
     return parse_postfix(ctx);
   }
@@ -288,18 +298,19 @@ expr_t *parse_mul_div(parser_ctx_t *ctx) {
   expr_t *expr = parse_unary(ctx);
 
   while (1) {
+    pos_t *pos = peek(ctx)->pos;
     switch (peek(ctx)->type) {
     case TOKEN_MUL:
       consume(ctx);
-      expr = new_binary_expr(EXPR_MUL, expr, parse_unary(ctx));
+      expr = new_binary_expr(EXPR_MUL, expr, parse_unary(ctx), pos);
       break;
     case TOKEN_DIV:
       consume(ctx);
-      expr = new_binary_expr(EXPR_DIV, expr, parse_unary(ctx));
+      expr = new_binary_expr(EXPR_DIV, expr, parse_unary(ctx), pos);
       break;
     case TOKEN_REM:
       consume(ctx);
-      expr = new_binary_expr(EXPR_REM, expr, parse_unary(ctx));
+      expr = new_binary_expr(EXPR_REM, expr, parse_unary(ctx), pos);
       break;
     default:
       return expr;
@@ -311,14 +322,15 @@ expr_t *parse_add_sub(parser_ctx_t *ctx) {
   expr_t *expr = parse_mul_div(ctx);
 
   while (1) {
+    pos_t *pos = peek(ctx)->pos;
     switch (peek(ctx)->type) {
     case TOKEN_ADD:
       consume(ctx);
-      expr = new_binary_expr(EXPR_ADD, expr, parse_mul_div(ctx));
+      expr = new_binary_expr(EXPR_ADD, expr, parse_mul_div(ctx), pos);
       break;
     case TOKEN_SUB:
       consume(ctx);
-      expr = new_binary_expr(EXPR_SUB, expr, parse_mul_div(ctx));
+      expr = new_binary_expr(EXPR_SUB, expr, parse_mul_div(ctx), pos);
       break;
     default:
       return expr;
@@ -330,14 +342,15 @@ expr_t *parse_shift(parser_ctx_t *ctx) {
   expr_t *expr = parse_add_sub(ctx);
 
   while (1) {
+    pos_t *pos = peek(ctx)->pos;
     switch (peek(ctx)->type) {
     case TOKEN_SHL:
       consume(ctx);
-      expr = new_binary_expr(EXPR_SHL, expr, parse_add_sub(ctx));
+      expr = new_binary_expr(EXPR_SHL, expr, parse_add_sub(ctx), pos);
       break;
     case TOKEN_SHR:
       consume(ctx);
-      expr = new_binary_expr(EXPR_SHR, expr, parse_add_sub(ctx));
+      expr = new_binary_expr(EXPR_SHR, expr, parse_add_sub(ctx), pos);
       break;
     default:
       return expr;
@@ -349,22 +362,23 @@ expr_t *parse_relational(parser_ctx_t *ctx) {
   expr_t *expr = parse_shift(ctx);
 
   while (1) {
+    pos_t *pos = peek(ctx)->pos;
     switch (peek(ctx)->type) {
     case TOKEN_LT:
       consume(ctx);
-      expr = new_binary_expr(EXPR_LT, expr, parse_shift(ctx));
+      expr = new_binary_expr(EXPR_LT, expr, parse_shift(ctx), pos);
       break;
     case TOKEN_LE:
       consume(ctx);
-      expr = new_binary_expr(EXPR_LE, expr, parse_shift(ctx));
+      expr = new_binary_expr(EXPR_LE, expr, parse_shift(ctx), pos);
       break;
     case TOKEN_GT:
       consume(ctx);
-      expr = new_binary_expr(EXPR_GT, expr, parse_shift(ctx));
+      expr = new_binary_expr(EXPR_GT, expr, parse_shift(ctx), pos);
       break;
     case TOKEN_GE:
       consume(ctx);
-      expr = new_binary_expr(EXPR_GE, expr, parse_shift(ctx));
+      expr = new_binary_expr(EXPR_GE, expr, parse_shift(ctx), pos);
       break;
     default:
       return expr;
@@ -376,14 +390,15 @@ expr_t *parse_equality(parser_ctx_t *ctx) {
   expr_t *expr = parse_relational(ctx);
 
   while (1) {
+    pos_t *pos = peek(ctx)->pos;
     switch (peek(ctx)->type) {
     case TOKEN_EQ:
       consume(ctx);
-      expr = new_binary_expr(EXPR_EQ, expr, parse_relational(ctx));
+      expr = new_binary_expr(EXPR_EQ, expr, parse_relational(ctx), pos);
       break;
     case TOKEN_NE:
       consume(ctx);
-      expr = new_binary_expr(EXPR_NE, expr, parse_relational(ctx));
+      expr = new_binary_expr(EXPR_NE, expr, parse_relational(ctx), pos);
       break;
     default:
       return expr;
@@ -394,8 +409,10 @@ expr_t *parse_equality(parser_ctx_t *ctx) {
 expr_t *parse_and(parser_ctx_t *ctx) {
   expr_t *expr = parse_equality(ctx);
 
+  pos_t *pos = peek(ctx)->pos;
   while (consume_if(ctx, TOKEN_AND)) {
-    expr = new_binary_expr(EXPR_AND, expr, parse_equality(ctx));
+    expr = new_binary_expr(EXPR_AND, expr, parse_equality(ctx), pos);
+    pos = peek(ctx)->pos;
   }
 
   return expr;
@@ -404,8 +421,10 @@ expr_t *parse_and(parser_ctx_t *ctx) {
 expr_t *parse_xor(parser_ctx_t *ctx) {
   expr_t *expr = parse_and(ctx);
 
+  pos_t *pos = peek(ctx)->pos;
   while (consume_if(ctx, TOKEN_XOR)) {
-    expr = new_binary_expr(EXPR_XOR, expr, parse_and(ctx));
+    expr = new_binary_expr(EXPR_XOR, expr, parse_and(ctx), pos);
+    pos = peek(ctx)->pos;
   }
 
   return expr;
@@ -414,8 +433,10 @@ expr_t *parse_xor(parser_ctx_t *ctx) {
 expr_t *parse_or(parser_ctx_t *ctx) {
   expr_t *expr = parse_xor(ctx);
 
+  pos_t *pos = peek(ctx)->pos;
   while (consume_if(ctx, TOKEN_OR)) {
-    expr = new_binary_expr(EXPR_OR, expr, parse_xor(ctx));
+    expr = new_binary_expr(EXPR_OR, expr, parse_xor(ctx), pos);
+    pos = peek(ctx)->pos;
   }
 
   return expr;
@@ -424,8 +445,10 @@ expr_t *parse_or(parser_ctx_t *ctx) {
 expr_t *parse_logand(parser_ctx_t *ctx) {
   expr_t *expr = parse_or(ctx);
 
+  pos_t *pos = peek(ctx)->pos;
   while (consume_if(ctx, TOKEN_LOGAND)) {
-    expr = new_binary_expr(EXPR_LOGAND, expr, parse_or(ctx));
+    expr = new_binary_expr(EXPR_LOGAND, expr, parse_or(ctx), pos);
+    pos = peek(ctx)->pos;
   }
 
   return expr;
@@ -434,8 +457,10 @@ expr_t *parse_logand(parser_ctx_t *ctx) {
 expr_t *parse_logor(parser_ctx_t *ctx) {
   expr_t *expr = parse_logand(ctx);
 
+  pos_t *pos = peek(ctx)->pos;
   while (consume_if(ctx, TOKEN_LOGOR)) {
-    expr = new_binary_expr(EXPR_LOGOR, expr, parse_logand(ctx));
+    expr = new_binary_expr(EXPR_LOGOR, expr, parse_logand(ctx), pos);
+    pos = peek(ctx)->pos;
   }
 
   return expr;
@@ -444,50 +469,61 @@ expr_t *parse_logor(parser_ctx_t *ctx) {
 expr_t *parse_assign(parser_ctx_t *ctx) {
   expr_t *expr = parse_logor(ctx);
 
+  pos_t *pos = peek(ctx)->pos;
   switch (peek(ctx)->type) {
   case TOKEN_ASSIGN:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr, parse_logor(ctx));
+    return new_assign_expr(EXPR_ASSIGN, expr, parse_logor(ctx), pos);
   case TOKEN_ADDEQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_ADD, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_ADD, expr, parse_logor(ctx), pos), pos);
   case TOKEN_SUBEQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_SUB, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_SUB, expr, parse_logor(ctx), pos), pos);
   case TOKEN_MULEQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_MUL, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_MUL, expr, parse_logor(ctx), pos), pos);
   case TOKEN_DIVEQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_DIV, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_DIV, expr, parse_logor(ctx), pos), pos);
   case TOKEN_REMEQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_REM, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_REM, expr, parse_logor(ctx), pos), pos);
   case TOKEN_ANDEQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_AND, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_AND, expr, parse_logor(ctx), pos), pos);
   case TOKEN_OREQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_OR, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_OR, expr, parse_logor(ctx), pos), pos);
   case TOKEN_XOREQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_XOR, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_XOR, expr, parse_logor(ctx), pos), pos);
   case TOKEN_SHLEQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_SHL, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_SHL, expr, parse_logor(ctx), pos), pos);
   case TOKEN_SHREQ:
     consume(ctx);
-    return new_assign_expr(EXPR_ASSIGN, expr,
-                           new_binary_expr(EXPR_SHR, expr, parse_logor(ctx)));
+    return new_assign_expr(
+        EXPR_ASSIGN, expr,
+        new_binary_expr(EXPR_SHR, expr, parse_logor(ctx), pos), pos);
   default:
     return expr;
   }
@@ -496,16 +532,17 @@ expr_t *parse_assign(parser_ctx_t *ctx) {
 expr_t *parse_expr(parser_ctx_t *ctx) { return parse_assign(ctx); }
 
 stmt_t *parse_return(parser_ctx_t *ctx) {
-  stmt_t *stmt = new_stmt(STMT_RETURN);
-  expect(ctx, TOKEN_RETURN);
+  pos_t *pos = expect(ctx, TOKEN_RETURN)->pos;
+  stmt_t *stmt = new_stmt(STMT_RETURN, pos);
   stmt->value.ret = parse_expr(ctx);
   expect(ctx, TOKEN_SEMICOLON);
   return stmt;
 }
 
 stmt_t *parse_if(parser_ctx_t *ctx) {
-  stmt_t *stmt = new_stmt(STMT_IF);
-  expect(ctx, TOKEN_IF);
+  pos_t *pos = expect(ctx, TOKEN_IF)->pos;
+  stmt_t *stmt = new_stmt(STMT_IF, pos);
+
   expect(ctx, TOKEN_PAREN_OPEN);
   stmt->value.if_.cond = parse_expr(ctx);
   expect(ctx, TOKEN_PAREN_CLOSE);
@@ -519,8 +556,9 @@ stmt_t *parse_if(parser_ctx_t *ctx) {
 }
 
 stmt_t *parse_while(parser_ctx_t *ctx) {
-  stmt_t *stmt = new_stmt(STMT_WHILE);
-  expect(ctx, TOKEN_WHILE);
+  pos_t *pos = expect(ctx, TOKEN_WHILE)->pos;
+  stmt_t *stmt = new_stmt(STMT_WHILE, pos);
+
   expect(ctx, TOKEN_PAREN_OPEN);
   stmt->value.while_.cond = parse_expr(ctx);
   expect(ctx, TOKEN_PAREN_CLOSE);
@@ -529,8 +567,9 @@ stmt_t *parse_while(parser_ctx_t *ctx) {
 }
 
 stmt_t *parse_for(parser_ctx_t *ctx) {
-  stmt_t *stmt = new_stmt(STMT_FOR);
-  expect(ctx, TOKEN_FOR);
+  pos_t *pos = expect(ctx, TOKEN_FOR)->pos;
+  stmt_t *stmt = new_stmt(STMT_FOR, pos);
+
   expect(ctx, TOKEN_PAREN_OPEN);
 
   // TODO
@@ -560,10 +599,10 @@ stmt_t *parse_for(parser_ctx_t *ctx) {
 }
 
 stmt_t *parse_block(parser_ctx_t *ctx) {
-  expect(ctx, TOKEN_BRACE_OPEN);
+  pos_t *pos = expect(ctx, TOKEN_BRACE_OPEN)->pos;
 
   if (consume_if(ctx, TOKEN_BRACE_CLOSE)) {
-    stmt_t *stmt = new_stmt(STMT_BLOCK);
+    stmt_t *stmt = new_stmt(STMT_BLOCK, pos);
     stmt->value.block = NULL;
     return stmt;
   }
@@ -576,7 +615,7 @@ stmt_t *parse_block(parser_ctx_t *ctx) {
   }
   expect(ctx, TOKEN_BRACE_CLOSE);
 
-  stmt_t *stmt = new_stmt(STMT_BLOCK);
+  stmt_t *stmt = new_stmt(STMT_BLOCK, pos);
   stmt->value.block = head;
   return stmt;
 }
@@ -633,7 +672,7 @@ type_t *parse_type(parser_ctx_t *ctx) {
     break;
   }
   default:
-    panic("unknown type: token=%d\n", peek(ctx)->type);
+    error(peek(ctx)->pos, "unknown type: token=%d\n", peek(ctx)->type);
   }
 
   while (consume_if(ctx, TOKEN_MUL)) {
@@ -655,6 +694,7 @@ type_t *parse_type_post(parser_ctx_t *ctx, type_t *base_type) {
 }
 
 stmt_t *parse_define(parser_ctx_t *ctx) {
+  pos_t *pos = peek(ctx)->pos;
   type_t *type = parse_type(ctx);
   char *name = expect(ctx, TOKEN_IDENT)->value.ident;
   type = parse_type_post(ctx, type);
@@ -665,7 +705,7 @@ stmt_t *parse_define(parser_ctx_t *ctx) {
   }
   expect(ctx, TOKEN_SEMICOLON);
 
-  stmt_t *stmt = new_stmt(STMT_DEFINE);
+  stmt_t *stmt = new_stmt(STMT_DEFINE, pos);
   stmt->value.define.type = type;
   stmt->value.define.name = name;
   stmt->value.define.value = value;
@@ -692,7 +732,7 @@ stmt_case_t *parse_case(parser_ctx_t *ctx) {
 }
 
 stmt_t *parse_switch(parser_ctx_t *ctx) {
-  expect(ctx, TOKEN_SWITCH);
+  pos_t *pos = expect(ctx, TOKEN_SWITCH)->pos;
   expect(ctx, TOKEN_PAREN_OPEN);
 
   expr_t *value = parse_expr(ctx);
@@ -716,7 +756,7 @@ stmt_t *parse_switch(parser_ctx_t *ctx) {
 
   expect(ctx, TOKEN_BRACE_CLOSE);
 
-  stmt_t *stmt = new_stmt(STMT_SWITCH);
+  stmt_t *stmt = new_stmt(STMT_SWITCH, pos);
   stmt->value.switch_.value = value;
   stmt->value.switch_.cases = head;
   stmt->value.switch_.default_case = default_case;
@@ -730,6 +770,7 @@ int is_type(parser_ctx_t *ctx, token_t *token) {
 }
 
 stmt_t *parse_stmt(parser_ctx_t *ctx) {
+  pos_t *pos = peek(ctx)->pos;
   switch (peek(ctx)->type) {
   case TOKEN_RETURN:
     return parse_return(ctx);
@@ -744,18 +785,18 @@ stmt_t *parse_stmt(parser_ctx_t *ctx) {
   case TOKEN_BREAK:
     consume(ctx);
     expect(ctx, TOKEN_SEMICOLON);
-    return new_stmt(STMT_BREAK);
+    return new_stmt(STMT_BREAK, pos);
   case TOKEN_CONTINUE:
     consume(ctx);
     expect(ctx, TOKEN_SEMICOLON);
-    return new_stmt(STMT_CONTINUE);
+    return new_stmt(STMT_CONTINUE, pos);
   case TOKEN_SWITCH:
     return parse_switch(ctx);
   default:
     if (is_type(ctx, peek(ctx))) {
       return parse_define(ctx);
     } else {
-      stmt_t *stmt = new_stmt(STMT_EXPR);
+      stmt_t *stmt = new_stmt(STMT_EXPR, pos);
       stmt->value.expr = parse_expr(ctx);
       expect(ctx, TOKEN_SEMICOLON);
       return stmt;
@@ -785,7 +826,7 @@ parameter_t *parse_parameter(parser_ctx_t *ctx) {
 }
 
 global_stmt_t *parse_typedef(parser_ctx_t *ctx) {
-  expect(ctx, TOKEN_TYPEDEF);
+  pos_t *pos = expect(ctx, TOKEN_TYPEDEF)->pos;
 
   type_t *type = parse_type(ctx);
   char *name = expect(ctx, TOKEN_IDENT)->value.ident;
@@ -793,11 +834,12 @@ global_stmt_t *parse_typedef(parser_ctx_t *ctx) {
 
   add_typedef(ctx, type, name);
 
-  return new_global_stmt(GSTMT_TYPEDEF);
+  return new_global_stmt(GSTMT_TYPEDEF, pos);
 }
 
 global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
   global_stmt_t *gstmt;
+  pos_t *pos = peek(ctx)->pos;
 
   if (peek(ctx)->type == TOKEN_TYPEDEF) {
     return parse_typedef(ctx);
@@ -806,12 +848,12 @@ global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
   type_t *type = parse_type(ctx);
   if (type->kind == TYPE_STRUCT && peek(ctx)->type != TOKEN_IDENT) {
     expect(ctx, TOKEN_SEMICOLON);
-    gstmt = new_global_stmt(GSTMT_STRUCT);
+    gstmt = new_global_stmt(GSTMT_STRUCT, pos);
     gstmt->value.struct_ = type;
     return gstmt;
   }
 
-  gstmt = new_global_stmt(GSTMT_FUNC);
+  gstmt = new_global_stmt(GSTMT_FUNC, pos);
   gstmt->value.func.ret_type = type;
   gstmt->value.func.name = expect(ctx, TOKEN_IDENT)->value.ident;
   expect(ctx, TOKEN_PAREN_OPEN);
