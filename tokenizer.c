@@ -16,16 +16,16 @@ token_t *new_token(tokentype_t type) {
   return token;
 }
 
-int next_char(tokenizer_ctx_t *ctx) { return fgetc(ctx->fp); }
+int read_char(tokenizer_ctx_t *ctx) { return fgetc(ctx->fp); }
 
-void push_char(tokenizer_ctx_t *ctx, int c) { ungetc(c, ctx->fp); }
+void unread_char(tokenizer_ctx_t *ctx, int c) { ungetc(c, ctx->fp); }
 
 void skip_whitespaces(tokenizer_ctx_t *ctx) {
-  int c = next_char(ctx);
+  int c = read_char(ctx);
   while (isspace(c)) {
-    c = next_char(ctx);
+    c = read_char(ctx);
   }
-  push_char(ctx, c);
+  unread_char(ctx, c);
 }
 
 int is_ident_head_char(char c) { return isalpha(c) || c == '_'; }
@@ -77,7 +77,7 @@ token_t *read_ident_token(tokenizer_ctx_t *ctx) {
 
   char c;
   while (1) {
-    c = next_char(ctx);
+    c = read_char(ctx);
     if (!is_ident_char(c)) {
       break;
     }
@@ -85,7 +85,7 @@ token_t *read_ident_token(tokenizer_ctx_t *ctx) {
     buf[buf_index] = c;
     buf_index++;
   }
-  push_char(ctx, c);
+  unread_char(ctx, c);
   buf[buf_index] = 0;
   buf_index++;
 
@@ -104,7 +104,7 @@ token_t *read_number_token(tokenizer_ctx_t *ctx) {
 
   char c;
   while (1) {
-    c = next_char(ctx);
+    c = read_char(ctx);
     if (!isdigit(c)) {
       break;
     }
@@ -112,7 +112,7 @@ token_t *read_number_token(tokenizer_ctx_t *ctx) {
     buf[buf_index] = c;
     buf_index++;
   }
-  push_char(ctx, c);
+  unread_char(ctx, c);
   buf[buf_index] = 0;
 
   token_t *token = new_token(TOKEN_NUMBER);
@@ -126,7 +126,7 @@ token_t *read_string_token(tokenizer_ctx_t *ctx) {
 
   int c;
   while (1) {
-    c = next_char(ctx);
+    c = read_char(ctx);
     if (c == EOF) {
       panic("missing terminating '\"'\n");
     }
@@ -148,25 +148,25 @@ token_t *read_string_token(tokenizer_ctx_t *ctx) {
 }
 
 void read_line_comment(tokenizer_ctx_t *ctx) {
-  while (next_char(ctx) != '\n')
+  while (read_char(ctx) != '\n')
     ;
 }
 
 token_t *read_next_token(tokenizer_ctx_t *ctx) {
   skip_whitespaces(ctx);
-  int c = next_char(ctx);
+  int c = read_char(ctx);
 
   if (c == EOF) {
     return new_token(TOKEN_EOF);
   }
 
   if (isdigit(c)) {
-    push_char(ctx, c);
+    unread_char(ctx, c);
     return read_number_token(ctx);
   }
 
   if (is_ident_head_char(c)) {
-    push_char(ctx, c);
+    unread_char(ctx, c);
     return read_ident_token(ctx);
   }
 
@@ -198,120 +198,120 @@ token_t *read_next_token(tokenizer_ctx_t *ctx) {
   case '.':
     return new_token(TOKEN_MEMBER);
   case '+': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_ADDEQ);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_ADD);
   }
   case '-': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_SUBEQ);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_SUB);
   }
   case '*': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_MULEQ);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_MUL);
   }
   case '/': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '/') {
       read_line_comment(ctx);
       return read_next_token(ctx);
     } else if (c2 == '=') {
       return new_token(TOKEN_DIVEQ);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_DIV);
   }
   case '%': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_REMEQ);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_REM);
   }
   case '&': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_ANDEQ);
     } else if (c2 == '&') {
       return new_token(TOKEN_LOGAND);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_AND);
   }
   case '|': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_OREQ);
     } else if (c2 == '|') {
       return new_token(TOKEN_LOGOR);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_OR);
   }
   case '^': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_XOREQ);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_XOR);
   }
   case '<': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_LE);
     } else if (c2 == '<') {
-      char c3 = next_char(ctx);
+      char c3 = read_char(ctx);
       if (c3 == '=') {
         return new_token(TOKEN_SHLEQ);
       }
-      push_char(ctx, c3);
+      unread_char(ctx, c3);
       return new_token(TOKEN_SHL);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_LT);
   }
   case '>': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_GE);
     } else if (c2 == '>') {
-      char c3 = next_char(ctx);
+      char c3 = read_char(ctx);
       if (c3 == '=') {
         return new_token(TOKEN_SHREQ);
       }
-      push_char(ctx, c3);
+      unread_char(ctx, c3);
       return new_token(TOKEN_SHR);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_GT);
   }
   case '=': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_EQ);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_ASSIGN);
   }
   case '!': {
-    char c2 = next_char(ctx);
+    char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_NE);
     }
-    push_char(ctx, c2);
+    unread_char(ctx, c2);
     return new_token(TOKEN_NEG);
   }
   }
