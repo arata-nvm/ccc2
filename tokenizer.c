@@ -18,15 +18,14 @@ token_t *new_token(tokentype_t type) {
 
 int next_char(tokenizer_ctx_t *ctx) { return fgetc(ctx->fp); }
 
-void push_char(tokenizer_ctx_t *ctx, char c) { ungetc(c, ctx->fp); }
+void push_char(tokenizer_ctx_t *ctx, int c) { ungetc(c, ctx->fp); }
 
-int read_char(tokenizer_ctx_t *ctx) {
-  int c = fgetc(ctx->fp);
+void skip_whitespaces(tokenizer_ctx_t *ctx) {
+  int c = next_char(ctx);
   while (isspace(c)) {
-    c = fgetc(ctx->fp);
+    c = next_char(ctx);
   }
-
-  return c;
+  push_char(ctx, c);
 }
 
 int is_ident_head_char(char c) { return isalpha(c) || c == '_'; }
@@ -154,7 +153,8 @@ void read_line_comment(tokenizer_ctx_t *ctx) {
 }
 
 token_t *read_next_token(tokenizer_ctx_t *ctx) {
-  int c = read_char(ctx);
+  skip_whitespaces(ctx);
+  int c = next_char(ctx);
 
   if (c == EOF) {
     return new_token(TOKEN_EOF);
