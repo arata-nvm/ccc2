@@ -1,6 +1,10 @@
 #pragma once
 #include <stdio.h>
 
+typedef struct {
+  FILE *fp;
+} tokenizer_ctx_t;
+
 typedef enum {
   TOKEN_EOF,
   TOKEN_NUMBER,
