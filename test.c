@@ -20,9 +20,9 @@ enum _type4_t {
   ENUM_HOGE2,
 };
 
-int assert(int expect, int actual);
+void assert(int expect, int actual);
 
-int assert(int expect, int actual) {
+void assert(int expect, int actual) {
   if (expect != actual) {
     printf("[NG] %d expected, but got %d\n", expect, actual);
   } else {

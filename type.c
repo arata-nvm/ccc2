@@ -106,6 +106,8 @@ type_t *enum_of(char *tag, enum_t *enums) {
 
 int type_size(type_t *type) {
   switch (type->kind) {
+  case TYPE_VOID:
+    return 0;
   case TYPE_CHAR:
     return 1;
   case TYPE_INT:
@@ -125,6 +127,8 @@ int type_size(type_t *type) {
 
 int type_align(type_t *type) {
   switch (type->kind) {
+  case TYPE_VOID:
+    return 0;
   case TYPE_CHAR:
     return 1;
   case TYPE_INT:

@@ -1,6 +1,7 @@
 #pragma once
 
 typedef enum {
+  TYPE_VOID,
   TYPE_CHAR,
   TYPE_INT,
   TYPE_PTR,

@@ -706,6 +706,10 @@ type_t *parse_enum(parser_ctx_t *ctx) {
 type_t *parse_type(parser_ctx_t *ctx) {
   type_t *type;
   switch (peek(ctx)->type) {
+  case TOKEN_VOID:
+    consume(ctx);
+    type = new_type(TYPE_VOID);
+    break;
   case TOKEN_CHAR:
     consume(ctx);
     type = new_type(TYPE_CHAR);
@@ -825,7 +829,7 @@ stmt_t *parse_switch(parser_ctx_t *ctx) {
 int is_type(parser_ctx_t *ctx, token_t *token) {
   return token->type == TOKEN_CHAR || token->type == TOKEN_INT ||
          token->type == TOKEN_STRUCT || token->type == TOKEN_UNION ||
-         token->type == TOKEN_ENUM ||
+         token->type == TOKEN_ENUM || token->type == TOKEN_VOID ||
          (token->type == TOKEN_IDENT && find_typedef(ctx, token->value.ident));
 }
 
