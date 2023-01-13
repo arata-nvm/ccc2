@@ -95,7 +95,38 @@ type_t *find_type(codegen_ctx_t *ctx, char *tag) {
 }
 
 type_t *complete_type(codegen_ctx_t *ctx, type_t *type) {
-  return find_type(ctx, type->value.struct_union.tag);
+  if (type->kind == TYPE_ENUM) {
+    return find_type(ctx, type->value.enum_.tag);
+  } else {
+    return find_type(ctx, type->value.struct_union.tag);
+  }
+}
+
+void append_enums(codegen_ctx_t *ctx, enum_t *enums) {
+  if (ctx->enums == NULL) {
+    ctx->enums = enums;
+    return;
+  }
+
+  enum_t *cur = ctx->enums;
+  while (cur->next) {
+    cur = cur->next;
+  }
+
+  cur->next = enums;
+}
+
+int find_enum(codegen_ctx_t *ctx, char *name, int *value) {
+  enum_t *cur = ctx->enums;
+  while (cur) {
+    if (!strcmp(cur->name, name)) {
+      *value = cur->value;
+      return 1;
+    }
+    cur = cur->next;
+  }
+
+  return 0;
 }
 
 int next_label(codegen_ctx_t *ctx) {
@@ -181,11 +212,16 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     return ptr_to(new_type(TYPE_CHAR));
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
-    if (var == NULL) {
-      error(expr->pos, "unknown variable '%s'\n", expr->value.ident);
+    if (var != NULL) {
+      return var->type;
     }
 
-    return var->type;
+    int enum_value;
+    if (find_enum(ctx, expr->value.ident, &enum_value)) {
+      return new_type(TYPE_INT);
+    }
+
+    error(expr->pos, "unknown variable '%s'\n", expr->value.ident);
   }
   case EXPR_ADD: {
     type_t *lhs_type = infer_expr_type(ctx, expr->value.binary.lhs);
@@ -307,13 +343,22 @@ void gen_special_expr(codegen_ctx_t *ctx, expr_t *expr) {
   }
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
-    if (var == NULL) {
-      error(expr->pos, "unknown variable '%s'\n", expr->value.ident);
+    if (var != NULL) {
+      gen_var_addr(ctx, var);
+      if (var->type->kind != TYPE_ARRAY) {
+        gen_load(ctx, var->type, expr->pos);
+      }
+      break;
     }
-    gen_var_addr(ctx, var);
-    if (var->type->kind != TYPE_ARRAY) {
-      gen_load(ctx, var->type, expr->pos);
+
+    int enum_value;
+    if (find_enum(ctx, expr->value.ident, &enum_value)) {
+      gen(ctx, "  mov x8, %d\n", enum_value);
+      gen_push(ctx, "x8");
+      break;
     }
+
+    error(expr->pos, "unknown variable '%s'\n", expr->value.ident);
     break;
   }
   case EXPR_ASSIGN:
@@ -704,7 +749,7 @@ void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params, pos_t *pos) {
       type = complete_type(ctx, type);
     }
 
-    variable_t *var = add_variable(ctx, params->type, params->name);
+    variable_t *var = add_variable(ctx, type, params->name);
     gen_push(ctx, arg_regs[i]);
     gen_var_addr(ctx, var);
     gen_store(ctx, var->type, pos);
@@ -735,11 +780,20 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
     break;
   case GSTMT_STRUCT:
   case GSTMT_UNION:
-    define_type(ctx, gstmt->value.struct_union);
+    define_type(ctx, gstmt->value.type);
+    break;
+  case GSTMT_ENUM:
+    define_type(ctx, gstmt->value.type);
+    append_enums(ctx, gstmt->value.type->value.enum_.enums);
     break;
   case GSTMT_FUNC_DECL:
-  case GSTMT_TYPEDEF:
     // do nothing
+    break;
+  case GSTMT_TYPEDEF:
+    if (gstmt->value.type->kind == TYPE_ENUM) {
+      define_type(ctx, gstmt->value.type);
+      append_enums(ctx, gstmt->value.type->value.enum_.enums);
+    }
     break;
   }
 }

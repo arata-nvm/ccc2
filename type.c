@@ -89,11 +89,27 @@ type_t *union_of(char *tag, struct_member_t *members) {
   return type;
 }
 
+enum_t *new_enum(char *name, int value) {
+  enum_t *enum_ = calloc(1, sizeof(enum_t));
+  enum_->name = name;
+  enum_->value = value;
+  return enum_;
+}
+
+type_t *enum_of(char *tag, enum_t *enums) {
+  type_t *type = new_type(TYPE_ENUM);
+  type->value.enum_.tag = tag;
+  type->value.enum_.enums = enums;
+
+  return type;
+}
+
 int type_size(type_t *type) {
   switch (type->kind) {
   case TYPE_CHAR:
     return 1;
   case TYPE_INT:
+  case TYPE_ENUM:
     return 4;
   case TYPE_PTR:
     return 8;
@@ -112,6 +128,7 @@ int type_align(type_t *type) {
   case TYPE_CHAR:
     return 1;
   case TYPE_INT:
+  case TYPE_ENUM:
     return 4;
   case TYPE_PTR:
   case TYPE_ARRAY:
@@ -153,7 +170,8 @@ struct_member_t *find_member(type_t *type, char *name) {
 }
 
 int is_integer(type_t *type) {
-  return type->kind == TYPE_CHAR || type->kind == TYPE_INT;
+  return type->kind == TYPE_CHAR || type->kind == TYPE_INT ||
+         type->kind == TYPE_ENUM;
 }
 
 int is_ptr(type_t *type) {
@@ -161,8 +179,12 @@ int is_ptr(type_t *type) {
 }
 
 int is_incomlete(type_t *type) {
-  return (type->kind == TYPE_STRUCT || type->kind == TYPE_UNION) &&
-         type->value.struct_union.members == NULL;
+  int is_struct_or_union =
+      (type->kind == TYPE_STRUCT || type->kind == TYPE_UNION) &&
+      type->value.struct_union.members == NULL;
+  int is_enum = type->kind == TYPE_ENUM && type->value.enum_.enums == NULL;
+
+  return is_struct_or_union || is_enum;
 }
 
 int align_to(int n, int align) { return (n + align - 1) & ~(align - 1); }

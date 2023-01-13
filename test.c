@@ -10,6 +10,16 @@ union _type2_t {
   char as_char;
 };
 
+typedef enum _type3_t {
+  ENUM_HOGE,
+  ENUM_FUGA,
+  ENUM_PIYO,
+} type3_t;
+
+enum _type4_t {
+  ENUM_HOGE2,
+};
+
 int assert(int expect, int actual);
 
 int assert(int expect, int actual) {
@@ -447,6 +457,14 @@ int main() {
     assert(2, v55.struct1.member2);
     assert(1, v55.struct2.member1);
     assert(2, v55.struct2.member2);
+  }
+  assert(0, ENUM_HOGE);
+  assert(1, ENUM_FUGA);
+  assert(2, ENUM_PIYO);
+  assert(0, ENUM_HOGE2);
+  {
+    type3_t v56 = ENUM_HOGE;
+    assert(0, v56);
   }
 
   return 0;

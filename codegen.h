@@ -40,6 +40,7 @@ typedef struct {
   string_t *strings;
   loop_t *loops;
   defined_type_t *types;
+  enum_t *enums;
 
   char *cur_func_name;
 

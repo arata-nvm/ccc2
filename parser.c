@@ -670,6 +670,39 @@ type_t *parse_struct_union(parser_ctx_t *ctx) {
   }
 }
 
+type_t *parse_enum(parser_ctx_t *ctx) {
+  expect(ctx, TOKEN_ENUM);
+
+  char *tag = NULL;
+  if (peek(ctx)->type == TOKEN_IDENT) {
+    tag = consume(ctx)->value.ident;
+  }
+
+  if (!consume_if(ctx, TOKEN_BRACE_OPEN)) {
+    return enum_of(tag, NULL);
+  }
+
+  char *name = expect(ctx, TOKEN_IDENT)->value.ident;
+  enum_t *head = new_enum(name, 0);
+  enum_t *cur = head;
+
+  int value = 1;
+  while (consume_if(ctx, TOKEN_COMMA)) {
+    if (peek(ctx)->type == TOKEN_BRACE_CLOSE) {
+      break;
+    }
+
+    name = expect(ctx, TOKEN_IDENT)->value.ident;
+    cur->next = new_enum(name, value);
+    value++;
+    cur = cur->next;
+  }
+
+  expect(ctx, TOKEN_BRACE_CLOSE);
+
+  return enum_of(tag, head);
+}
+
 type_t *parse_type(parser_ctx_t *ctx) {
   type_t *type;
   switch (peek(ctx)->type) {
@@ -684,6 +717,9 @@ type_t *parse_type(parser_ctx_t *ctx) {
   case TOKEN_STRUCT:
   case TOKEN_UNION:
     type = parse_struct_union(ctx);
+    break;
+  case TOKEN_ENUM:
+    type = parse_enum(ctx);
     break;
   case TOKEN_IDENT: {
     token_t *token = consume(ctx);
@@ -789,6 +825,7 @@ stmt_t *parse_switch(parser_ctx_t *ctx) {
 int is_type(parser_ctx_t *ctx, token_t *token) {
   return token->type == TOKEN_CHAR || token->type == TOKEN_INT ||
          token->type == TOKEN_STRUCT || token->type == TOKEN_UNION ||
+         token->type == TOKEN_ENUM ||
          (token->type == TOKEN_IDENT && find_typedef(ctx, token->value.ident));
 }
 
@@ -857,7 +894,9 @@ global_stmt_t *parse_typedef(parser_ctx_t *ctx) {
 
   add_typedef(ctx, type, name);
 
-  return new_global_stmt(GSTMT_TYPEDEF, pos);
+  global_stmt_t *gstmt = new_global_stmt(GSTMT_TYPEDEF, pos);
+  gstmt->value.type = type;
+  return gstmt;
 }
 
 global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
@@ -871,12 +910,20 @@ global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
   type_t *type = parse_type(ctx);
   if (peek(ctx)->type != TOKEN_IDENT) {
     expect(ctx, TOKEN_SEMICOLON);
-    if (type->kind == TYPE_STRUCT) {
+    switch (type->kind) {
+    case TYPE_STRUCT:
       gstmt = new_global_stmt(GSTMT_STRUCT, pos);
-    } else if (type->kind == TYPE_UNION) {
+      break;
+    case TYPE_UNION:
       gstmt = new_global_stmt(GSTMT_UNION, pos);
+      break;
+    case TYPE_ENUM:
+      gstmt = new_global_stmt(GSTMT_ENUM, pos);
+      break;
+    default:
+      error(pos, "unexpected type: kind=%d\n", type->kind);
     }
-    gstmt->value.struct_union = type;
+    gstmt->value.type = type;
     return gstmt;
   }
 
