@@ -686,8 +686,12 @@ type_t *parse_type(parser_ctx_t *ctx) {
     type = parse_struct_union(ctx);
     break;
   case TOKEN_IDENT: {
-    char *type_name = consume(ctx)->value.ident;
-    type = find_typedef(ctx, type_name)->type;
+    token_t *token = consume(ctx);
+    typedef_t *typdef = find_typedef(ctx, token->value.ident);
+    if (!typdef) {
+      error(token->pos, "unknown type: %s\n", token->value.ident);
+    }
+    type = typdef->type;
     break;
   }
   default:
