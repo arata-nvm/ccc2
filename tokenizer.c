@@ -235,8 +235,18 @@ token_t *read_next_token(tokenizer_ctx_t *ctx) {
     return new_token(TOKEN_NOT, pos);
   case ':':
     return new_token(TOKEN_COLON, pos);
-  case '.':
+  case '.': {
+    char c2 = read_char(ctx);
+    if (c2 == '.') {
+      char c3 = read_char(ctx);
+      if (c3 == '.') {
+        return new_token(TOKEN_VARARG, pos);
+      }
+      unread_char(ctx, c3);
+    }
+    unread_char(ctx, c2);
     return new_token(TOKEN_MEMBER, pos);
+  }
   case '+': {
     char c2 = read_char(ctx);
     if (c2 == '=') {

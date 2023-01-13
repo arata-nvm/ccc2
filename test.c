@@ -49,6 +49,8 @@ int test5(int v1) {
   }
 }
 
+void test6(int v1, ...);
+
 int main() {
   assert(0, 0);
   assert(42, 42);

@@ -77,6 +77,7 @@ typedef enum {
   TOKEN_UNION,
   TOKEN_ENUM,
   TOKEN_VOID,
+  TOKEN_VARARG,
 } tokentype_t;
 
 typedef struct _token_t token_t;

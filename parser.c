@@ -880,6 +880,9 @@ parameter_t *parse_parameter(parser_ctx_t *ctx) {
 
   while (peek(ctx)->type == TOKEN_COMMA) {
     expect(ctx, TOKEN_COMMA);
+    if (consume_if(ctx, TOKEN_VARARG)) {
+      break;
+    }
     type = parse_type(ctx);
     name = expect(ctx, TOKEN_IDENT)->value.ident;
     cur->next = new_parameter(type, name);
