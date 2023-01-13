@@ -161,7 +161,8 @@ int is_ptr(type_t *type) {
 }
 
 int is_incomlete(type_t *type) {
-  return type->kind == TYPE_STRUCT && type->value.struct_union.members == NULL;
+  return (type->kind == TYPE_STRUCT || type->kind == TYPE_UNION) &&
+         type->value.struct_union.members == NULL;
 }
 
 int align_to(int n, int align) { return (n + align - 1) & ~(align - 1); }

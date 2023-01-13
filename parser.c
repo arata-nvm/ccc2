@@ -639,7 +639,11 @@ type_t *parse_struct_union(parser_ctx_t *ctx) {
   }
 
   if (!consume_if(ctx, TOKEN_BRACE_OPEN)) {
-    return struct_of(tag, NULL);
+    if (is_union) {
+      return union_of(tag, NULL);
+    } else {
+      return struct_of(tag, NULL);
+    }
   }
 
   type_t *type = parse_type(ctx);
