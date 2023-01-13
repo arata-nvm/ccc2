@@ -97,6 +97,8 @@ void replace_reserved_tokens(token_t *token) {
     token->type = TOKEN_STRUCT;
   } else if (!strcmp(ident, "typedef")) {
     token->type = TOKEN_TYPEDEF;
+  } else if (!strcmp(ident, "union")) {
+    token->type = TOKEN_UNION;
   }
 }
 

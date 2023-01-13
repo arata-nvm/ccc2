@@ -233,33 +233,38 @@ expr_t *parse_primary(parser_ctx_t *ctx) {
 expr_t *parse_postfix(parser_ctx_t *ctx) {
   expr_t *expr = parse_primary(ctx);
 
-  pos_t *pos = peek(ctx)->pos;
-  switch (peek(ctx)->type) {
-  case TOKEN_PAREN_OPEN:
-    consume(ctx);
-    if (expr->type != EXPR_IDENT) {
-      error(pos, "not supported calling: expr=%d\n", expr->type);
+  while (1) {
+    pos_t *pos = peek(ctx)->pos;
+    switch (peek(ctx)->type) {
+    case TOKEN_PAREN_OPEN:
+      consume(ctx);
+      if (expr->type != EXPR_IDENT) {
+        error(pos, "not supported calling: expr=%d\n", expr->type);
+      }
+      expr_t *expr2 = new_expr(EXPR_CALL, pos);
+      expr2->value.call.name = expr->value.ident;
+      expr2->value.call.args = parse_arguments(ctx);
+      expect(ctx, TOKEN_PAREN_CLOSE);
+      expr = expr2;
+      break;
+    case TOKEN_BRACK_OPEN:
+      consume(ctx);
+      expr_t *index = parse_expr(ctx);
+      expect(ctx, TOKEN_BRACK_CLOSE);
+      expr = new_unary_expr(EXPR_DEREF,
+                            new_binary_expr(EXPR_ADD, expr, index, pos), pos);
+      break;
+    case TOKEN_MEMBER:
+      consume(ctx);
+      char *name = expect(ctx, TOKEN_IDENT)->value.ident;
+      expr_t *expr3 = new_expr(EXPR_MEMBER, pos);
+      expr3->value.member.expr = expr;
+      expr3->value.member.name = name;
+      expr = expr3;
+      break;
+    default:
+      return expr;
     }
-    expr_t *expr2 = new_expr(EXPR_CALL, pos);
-    expr2->value.call.name = expr->value.ident;
-    expr2->value.call.args = parse_arguments(ctx);
-    expect(ctx, TOKEN_PAREN_CLOSE);
-    return expr2;
-  case TOKEN_BRACK_OPEN:
-    consume(ctx);
-    expr_t *index = parse_expr(ctx);
-    expect(ctx, TOKEN_BRACK_CLOSE);
-    return new_unary_expr(EXPR_DEREF,
-                          new_binary_expr(EXPR_ADD, expr, index, pos), pos);
-  case TOKEN_MEMBER:
-    consume(ctx);
-    char *name = expect(ctx, TOKEN_IDENT)->value.ident;
-    expr_t *expr3 = new_expr(EXPR_MEMBER, pos);
-    expr3->value.member.expr = expr;
-    expr3->value.member.name = name;
-    return expr3;
-  default:
-    return expr;
   }
 }
 
@@ -620,8 +625,13 @@ stmt_t *parse_block(parser_ctx_t *ctx) {
   return stmt;
 }
 
-type_t *parse_struct(parser_ctx_t *ctx) {
-  expect(ctx, TOKEN_STRUCT);
+type_t *parse_struct_union(parser_ctx_t *ctx) {
+  int is_union = 0;
+  if (consume_if(ctx, TOKEN_UNION)) {
+    is_union = 1;
+  } else {
+    expect(ctx, TOKEN_STRUCT);
+  }
 
   char *tag = NULL;
   if (peek(ctx)->type == TOKEN_IDENT) {
@@ -649,7 +659,11 @@ type_t *parse_struct(parser_ctx_t *ctx) {
 
   expect(ctx, TOKEN_BRACE_CLOSE);
 
-  return struct_of(tag, head);
+  if (is_union) {
+    return union_of(tag, head);
+  } else {
+    return struct_of(tag, head);
+  }
 }
 
 type_t *parse_type(parser_ctx_t *ctx) {
@@ -664,7 +678,8 @@ type_t *parse_type(parser_ctx_t *ctx) {
     type = new_type(TYPE_INT);
     break;
   case TOKEN_STRUCT:
-    type = parse_struct(ctx);
+  case TOKEN_UNION:
+    type = parse_struct_union(ctx);
     break;
   case TOKEN_IDENT: {
     char *type_name = consume(ctx)->value.ident;
@@ -765,7 +780,7 @@ stmt_t *parse_switch(parser_ctx_t *ctx) {
 
 int is_type(parser_ctx_t *ctx, token_t *token) {
   return token->type == TOKEN_CHAR || token->type == TOKEN_INT ||
-         token->type == TOKEN_STRUCT ||
+         token->type == TOKEN_STRUCT || token->type == TOKEN_UNION ||
          (token->type == TOKEN_IDENT && find_typedef(ctx, token->value.ident));
 }
 
@@ -846,10 +861,14 @@ global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
   }
 
   type_t *type = parse_type(ctx);
-  if (type->kind == TYPE_STRUCT && peek(ctx)->type != TOKEN_IDENT) {
+  if (peek(ctx)->type != TOKEN_IDENT) {
     expect(ctx, TOKEN_SEMICOLON);
-    gstmt = new_global_stmt(GSTMT_STRUCT, pos);
-    gstmt->value.struct_ = type;
+    if (type->kind == TYPE_STRUCT) {
+      gstmt = new_global_stmt(GSTMT_STRUCT, pos);
+    } else if (type->kind == TYPE_UNION) {
+      gstmt = new_global_stmt(GSTMT_UNION, pos);
+    }
+    gstmt->value.struct_union = type;
     return gstmt;
   }
 

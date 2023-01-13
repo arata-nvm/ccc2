@@ -6,6 +6,7 @@ typedef enum {
   TYPE_PTR,
   TYPE_ARRAY,
   TYPE_STRUCT,
+  TYPE_UNION,
 } typekind_t;
 
 typedef struct _struct_member_t struct_member_t;
@@ -33,7 +34,7 @@ struct _type_t {
 
       int size;
       int align;
-    } struct_;
+    } struct_union;
   } value;
 };
 
@@ -46,6 +47,8 @@ type_t *array_of(type_t *elm_type, int len);
 struct_member_t *new_struct_member(type_t *type, char *name);
 
 type_t *struct_of(char *tag, struct_member_t *members);
+
+type_t *union_of(char *tag, struct_member_t *members);
 
 int type_size(type_t *type);
 

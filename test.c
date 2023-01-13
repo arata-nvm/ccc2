@@ -4,6 +4,12 @@ struct _type1_t {
   char member2;
 };
 
+typedef union _type2_t type2_t;
+union _type2_t {
+  int as_int;
+  char as_char;
+};
+
 int assert(int expect, int actual);
 
 int assert(int expect, int actual) {
@@ -384,6 +390,63 @@ int main() {
     v51.member2 = 2;
     assert(1, v51.member1);
     assert(2, v51.member2);
+  }
+  {
+    union {
+      int as_int;
+      char as_char;
+    } v52;
+    v52.as_int = 1;
+    assert(1, v52.as_int);
+    assert(1, v52.as_char);
+    v52.as_int = 257;
+    assert(257, v52.as_int);
+    assert(1, v52.as_char);
+    v52.as_char = 0;
+    assert(256, v52.as_int);
+    assert(0, v52.as_char);
+  }
+  {
+    union _type2_t v53;
+    v53.as_int = 1;
+    assert(1, v53.as_int);
+    assert(1, v53.as_char);
+    v53.as_int = 257;
+    assert(257, v53.as_int);
+    assert(1, v53.as_char);
+    v53.as_char = 0;
+    assert(256, v53.as_int);
+    assert(0, v53.as_char);
+  }
+  {
+    type2_t v54;
+    v54.as_int = 1;
+    assert(1, v54.as_int);
+    assert(1, v54.as_char);
+    v54.as_int = 257;
+    assert(257, v54.as_int);
+    assert(1, v54.as_char);
+    v54.as_char = 0;
+    assert(256, v54.as_int);
+    assert(0, v54.as_char);
+  }
+  {
+    union {
+      struct {
+        int member1;
+        int member2;
+      } struct1;
+      struct {
+        int member1;
+        char member2;
+      } struct2;
+    } v55;
+    v55.struct1.member1 = 1;
+    v55.struct1.member2 = 2;
+    assert(1, v55.struct1.member1);
+    assert(2, v55.struct1.member2);
+    assert(1, v55.struct2.member1);
+    assert(2, v55.struct2.member2);
   }
 
   return 0;

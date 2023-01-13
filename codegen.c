@@ -85,7 +85,7 @@ void define_type(codegen_ctx_t *ctx, type_t *type) {
 type_t *find_type(codegen_ctx_t *ctx, char *tag) {
   defined_type_t *cur = ctx->types;
   while (cur) {
-    if (!strcmp(cur->type->value.struct_.tag, tag)) {
+    if (!strcmp(cur->type->value.struct_union.tag, tag)) {
       return cur->type;
     }
     cur = cur->next;
@@ -95,7 +95,7 @@ type_t *find_type(codegen_ctx_t *ctx, char *tag) {
 }
 
 type_t *complete_type(codegen_ctx_t *ctx, type_t *type) {
-  return find_type(ctx, type->value.struct_.tag);
+  return find_type(ctx, type->value.struct_union.tag);
 }
 
 int next_label(codegen_ctx_t *ctx) {
@@ -734,7 +734,8 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
     gen(ctx, "  ret\n");
     break;
   case GSTMT_STRUCT:
-    define_type(ctx, gstmt->value.struct_);
+  case GSTMT_UNION:
+    define_type(ctx, gstmt->value.struct_union);
     break;
   case GSTMT_FUNC_DECL:
   case GSTMT_TYPEDEF:

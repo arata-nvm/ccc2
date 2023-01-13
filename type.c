@@ -42,6 +42,20 @@ int calc_size(struct_member_t *members) {
   return offset;
 }
 
+int calc_max_size(struct_member_t *members) {
+  int max_size = 0;
+  struct_member_t *cur = members;
+  while (cur) {
+    int cur_size = type_size(cur->type);
+    if (cur_size > max_size) {
+      max_size = cur_size;
+    }
+
+    cur = cur->next;
+  }
+  return max_size;
+}
+
 int calc_align(struct_member_t *members) {
   int align = 1;
   struct_member_t *cur = members;
@@ -57,10 +71,20 @@ int calc_align(struct_member_t *members) {
 
 type_t *struct_of(char *tag, struct_member_t *members) {
   type_t *type = new_type(TYPE_STRUCT);
-  type->value.struct_.tag = tag;
-  type->value.struct_.members = members;
-  type->value.struct_.size = calc_size(members);
-  type->value.struct_.align = calc_align(members);
+  type->value.struct_union.tag = tag;
+  type->value.struct_union.members = members;
+  type->value.struct_union.size = calc_size(members);
+  type->value.struct_union.align = calc_align(members);
+
+  return type;
+}
+
+type_t *union_of(char *tag, struct_member_t *members) {
+  type_t *type = new_type(TYPE_UNION);
+  type->value.struct_union.tag = tag;
+  type->value.struct_union.members = members;
+  type->value.struct_union.size = calc_max_size(members);
+  type->value.struct_union.align = calc_align(members);
 
   return type;
 }
@@ -76,7 +100,8 @@ int type_size(type_t *type) {
   case TYPE_ARRAY:
     return type_size(type->value.array.elm) * type->value.array.len;
   case TYPE_STRUCT:
-    return type->value.struct_.size;
+  case TYPE_UNION:
+    return type->value.struct_union.size;
   default:
     panic("unknown type: type=%d\n", type->kind);
   }
@@ -92,7 +117,8 @@ int type_align(type_t *type) {
   case TYPE_ARRAY:
     return 8;
   case TYPE_STRUCT:
-    return type->value.struct_.align;
+  case TYPE_UNION:
+    return type->value.struct_union.align;
   default:
     panic("unknown type: type=%d\n", type->kind);
   }
@@ -110,11 +136,11 @@ type_t *type_deref(type_t *type) {
 }
 
 struct_member_t *find_member(type_t *type, char *name) {
-  if (type->kind != TYPE_STRUCT) {
-    panic("type must be struct: type=%d\n", type->kind);
+  if (type->kind != TYPE_STRUCT && type->kind != TYPE_UNION) {
+    panic("type must be struct or union: type=%d\n", type->kind);
   }
 
-  struct_member_t *cur = type->value.struct_.members;
+  struct_member_t *cur = type->value.struct_union.members;
   while (cur) {
     if (!strcmp(cur->name, name)) {
       return cur;
@@ -135,7 +161,7 @@ int is_ptr(type_t *type) {
 }
 
 int is_incomlete(type_t *type) {
-  return type->kind == TYPE_STRUCT && type->value.struct_.members == NULL;
+  return type->kind == TYPE_STRUCT && type->value.struct_union.members == NULL;
 }
 
 int align_to(int n, int align) { return (n + align - 1) & ~(align - 1); }
