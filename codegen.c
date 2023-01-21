@@ -895,13 +895,46 @@ void gen_text(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
   }
 }
 
+void gen_string(codegen_ctx_t *ctx, char *string) {
+  gen(ctx, "  .string \"");
+
+  char *p = string;
+  char buf[2];
+  buf[1] = 0;
+
+  while (*p) {
+    switch (*p) {
+    case '\n':
+      gen(ctx, "\\n");
+      break;
+    case '\\':
+      gen(ctx, "\\\\");
+      break;
+    case '\'':
+      gen(ctx, "\\'");
+      break;
+    case '\"':
+      gen(ctx, "\\\"");
+      break;
+    default:
+      buf[0] = *p;
+      gen(ctx, buf);
+      break;
+    }
+
+    p++;
+  }
+
+  gen(ctx, "\\0\"\n");
+}
+
 void gen_data(codegen_ctx_t *ctx) {
   string_t *cur = ctx->strings;
   int str_index = ctx->cur_string;
 
   while (cur) {
     gen(ctx, ".L.str.%d:\n", str_index);
-    gen(ctx, "  .string \"%s\\0\"\n", cur->string);
+    gen_string(ctx, cur->string);
 
     cur = cur->next;
     str_index--;
