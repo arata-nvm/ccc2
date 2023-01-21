@@ -807,12 +807,18 @@ stmt_case_t *parse_case(parser_ctx_t *ctx) {
   }
   expect(ctx, TOKEN_COLON);
 
-  stmt_list_t *head = new_stmt_list(parse_stmt(ctx));
+  stmt_list_t *head = NULL;
   stmt_list_t *cur = head;
   while (peek(ctx)->type != TOKEN_CASE && peek(ctx)->type != TOKEN_DEFAULT &&
          peek(ctx)->type != TOKEN_BRACE_CLOSE) {
-    cur->next = new_stmt_list(parse_stmt(ctx));
-    cur = cur->next;
+
+    if (!head) {
+      head = new_stmt_list(parse_stmt(ctx));
+      cur = head;
+    } else {
+      cur->next = new_stmt_list(parse_stmt(ctx));
+      cur = cur->next;
+    }
   }
 
   return new_stmt_case(value, head);

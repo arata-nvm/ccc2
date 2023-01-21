@@ -499,17 +499,32 @@ int main() {
     assert(2, v62->member2);
   }
   {
+    int v63 = 0;
     switch (ENUM_HOGE) {
     case ENUM_HOGE:
-      assert(1, 1);
+      v63 += 1;
       break;
     case ENUM_FUGA:
-      assert(1, 0);
+      v63 += 2;
       break;
     case ENUM_PIYO:
-      assert(1, 0);
+      v63 += 4;
       break;
     }
+    assert(1, v63);
+  }
+  {
+    int v64 = 0;
+    switch (1) {
+    case 1:
+    case 2:
+      v64 += 1;
+      break;
+    case 3:
+      v64 += 2;
+      break;
+    }
+    assert(1, v64);
   }
 
   return 0;
