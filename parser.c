@@ -657,8 +657,9 @@ stmt_t *parse_for(parser_ctx_t *ctx) {
 stmt_t *parse_block(parser_ctx_t *ctx) {
   pos_t *pos = expect(ctx, TOKEN_BRACE_OPEN)->pos;
 
+  stmt_t *stmt;
   if (consume_if(ctx, TOKEN_BRACE_CLOSE)) {
-    stmt_t *stmt = new_stmt(STMT_BLOCK, pos);
+    stmt = new_stmt(STMT_BLOCK, pos);
     stmt->value.block = NULL;
     return stmt;
   }
@@ -671,7 +672,7 @@ stmt_t *parse_block(parser_ctx_t *ctx) {
   }
   expect(ctx, TOKEN_BRACE_CLOSE);
 
-  stmt_t *stmt = new_stmt(STMT_BLOCK, pos);
+  stmt = new_stmt(STMT_BLOCK, pos);
   stmt->value.block = head;
   return stmt;
 }
@@ -705,8 +706,8 @@ type_t *parse_struct_union(parser_ctx_t *ctx) {
   struct_member_t *cur = head;
 
   while (peek(ctx)->type != TOKEN_BRACE_CLOSE) {
-    type_t *type = parse_type(ctx);
-    char *name = expect(ctx, TOKEN_IDENT)->value.ident;
+    type = parse_type(ctx);
+    name = expect(ctx, TOKEN_IDENT)->value.ident;
     expect(ctx, TOKEN_SEMICOLON);
     cur->next = new_struct_member(type, name);
     cur = cur->next;
