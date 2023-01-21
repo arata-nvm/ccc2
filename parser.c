@@ -15,6 +15,10 @@ int is_unary_expr(exprtype_t type) {
   case EXPR_SIZEOF:
   case EXPR_NOT:
   case EXPR_NEG:
+  case EXPR_INC_PRE:
+  case EXPR_INC_POST:
+  case EXPR_DEC_PRE:
+  case EXPR_DEC_POST:
     return 1;
   default:
     return 0;
@@ -262,6 +266,12 @@ expr_t *parse_postfix(parser_ctx_t *ctx) {
       expr3->value.member.name = name;
       expr = expr3;
       break;
+    case TOKEN_INC:
+      consume(ctx);
+      return new_unary_expr(EXPR_INC_POST, expr, pos);
+    case TOKEN_DEC:
+      consume(ctx);
+      return new_unary_expr(EXPR_DEC_POST, expr, pos);
     default:
       return expr;
     }
@@ -294,6 +304,12 @@ expr_t *parse_unary(parser_ctx_t *ctx) {
   case TOKEN_SIZEOF:
     consume(ctx);
     return new_unary_expr(EXPR_SIZEOF, parse_unary(ctx), pos);
+  case TOKEN_INC:
+    consume(ctx);
+    return new_unary_expr(EXPR_INC_PRE, parse_postfix(ctx), pos);
+  case TOKEN_DEC:
+    consume(ctx);
+    return new_unary_expr(EXPR_DEC_PRE, parse_postfix(ctx), pos);
   default:
     return parse_postfix(ctx);
   }

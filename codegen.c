@@ -308,6 +308,11 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
 
     return member->type;
   }
+  case EXPR_INC_PRE:
+  case EXPR_INC_POST:
+  case EXPR_DEC_PRE:
+  case EXPR_DEC_POST:
+    return infer_expr_type(ctx, expr->value.unary);
   }
   error(expr->pos, "unreachable\n");
 }
@@ -436,6 +441,46 @@ void gen_unary_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen(ctx, "  subs x8, x8, 0\n");
     gen(ctx, "  cset x8, eq\n");
     gen_push(ctx, "x8");
+    break;
+  case EXPR_INC_PRE:
+    gen_expr(ctx, expr->value.unary);
+    gen_pop(ctx, "x8");
+    gen(ctx, "  add x8, x8, 1\n"); // TODO
+    gen_push(ctx, "x8");
+    gen_push(ctx, "x8");
+
+    gen_lvalue(ctx, expr->value.unary);
+    gen_store(ctx, infer_expr_type(ctx, expr), expr->pos);
+    break;
+  case EXPR_INC_POST:
+    gen_expr(ctx, expr->value.unary);
+    gen_pop(ctx, "x8");
+    gen_push(ctx, "x8");
+    gen(ctx, "  add x8, x8, 1\n"); // TODO
+    gen_push(ctx, "x8");
+
+    gen_lvalue(ctx, expr->value.unary);
+    gen_store(ctx, infer_expr_type(ctx, expr), expr->pos);
+    break;
+  case EXPR_DEC_PRE:
+    gen_expr(ctx, expr->value.unary);
+    gen_pop(ctx, "x8");
+    gen(ctx, "  sub x8, x8, 1\n"); // TODO
+    gen_push(ctx, "x8");
+    gen_push(ctx, "x8");
+
+    gen_lvalue(ctx, expr->value.unary);
+    gen_store(ctx, infer_expr_type(ctx, expr), expr->pos);
+    break;
+  case EXPR_DEC_POST:
+    gen_expr(ctx, expr->value.unary);
+    gen_pop(ctx, "x8");
+    gen_push(ctx, "x8");
+    gen(ctx, "  sub x8, x8, 1\n"); // TODO
+    gen_push(ctx, "x8");
+
+    gen_lvalue(ctx, expr->value.unary);
+    gen_store(ctx, infer_expr_type(ctx, expr), expr->pos);
     break;
   default:
     error(expr->pos, "unreachable: expr=%d\n", expr->type);

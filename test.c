@@ -476,6 +476,18 @@ int main() {
     assert(1, (*v58).member1);
     assert(2, (*v58).member2);
   }
+  {
+    int v59 = 0;
+    assert(++v59, 1);
+    assert(v59++, 1);
+    assert(v59, 2);
+  }
+  {
+    int v60 = 2;
+    assert(--v60, 1);
+    assert(v60--, 1);
+    assert(v60, 0);
+  }
 
   return 0;
 }

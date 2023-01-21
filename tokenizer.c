@@ -251,6 +251,8 @@ token_t *read_next_token(tokenizer_ctx_t *ctx) {
     char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_ADDEQ, pos);
+    } else if (c2 == '+') {
+      return new_token(TOKEN_INC, pos);
     }
     unread_char(ctx, c2);
     return new_token(TOKEN_ADD, pos);
@@ -259,6 +261,8 @@ token_t *read_next_token(tokenizer_ctx_t *ctx) {
     char c2 = read_char(ctx);
     if (c2 == '=') {
       return new_token(TOKEN_SUBEQ, pos);
+    } else if (c2 == '-') {
+      return new_token(TOKEN_DEC, pos);
     }
     unread_char(ctx, c2);
     return new_token(TOKEN_SUB, pos);

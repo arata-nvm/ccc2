@@ -30,6 +30,10 @@ typedef enum {
   EXPR_SIZEOF,
   EXPR_NOT,
   EXPR_NEG,
+  EXPR_INC_PRE,
+  EXPR_INC_POST,
+  EXPR_DEC_PRE,
+  EXPR_DEC_POST,
 
   // binary
   EXPR_ADD,
