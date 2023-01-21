@@ -263,6 +263,8 @@ token_t *read_next_token(tokenizer_ctx_t *ctx) {
       return new_token(TOKEN_SUBEQ, pos);
     } else if (c2 == '-') {
       return new_token(TOKEN_DEC, pos);
+    } else if (c2 == '>') {
+      return new_token(TOKEN_ARROW, pos);
     }
     unread_char(ctx, c2);
     return new_token(TOKEN_SUB, pos);

@@ -272,6 +272,14 @@ expr_t *parse_postfix(parser_ctx_t *ctx) {
     case TOKEN_DEC:
       consume(ctx);
       return new_unary_expr(EXPR_DEC_POST, expr, pos);
+    case TOKEN_ARROW:
+      consume(ctx);
+      char *name2 = expect(ctx, TOKEN_IDENT)->value.ident;
+      expr_t *expr4 = new_expr(EXPR_MEMBER, pos);
+      expr4->value.member.expr = new_unary_expr(EXPR_DEREF, expr, pos);
+      expr4->value.member.name = name2;
+      expr = expr4;
+      break;
     default:
       return expr;
     }

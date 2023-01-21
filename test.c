@@ -488,6 +488,16 @@ int main() {
     assert(v60--, 1);
     assert(v60, 0);
   }
+  {
+    type1_t v61;
+    type1_t *v62 = &v61;
+    v62->member1 = 1;
+    v62->member2 = 2;
+    assert(1, v61.member1);
+    assert(2, v61.member2);
+    assert(1, v62->member1);
+    assert(2, v62->member2);
+  }
 
   return 0;
 }

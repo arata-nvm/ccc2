@@ -80,6 +80,7 @@ typedef enum {
   TOKEN_VARARG,
   TOKEN_INC,
   TOKEN_DEC,
+  TOKEN_ARROW,
 } tokentype_t;
 
 typedef struct _token_t token_t;
