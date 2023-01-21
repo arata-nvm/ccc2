@@ -11,6 +11,9 @@ function process {
 
 cat > ${out} << EOF
 typedef struct FILE FILE;
+typedef int va_list;
+void va_start() {}
+void va_end() {}
 EOF
 
 process type.h
@@ -21,3 +24,4 @@ process codegen.h
 
 process type.c
 process tokenizer.c
+process error.c
