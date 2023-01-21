@@ -12,6 +12,14 @@ struct _variable_t {
   variable_t *next;
 };
 
+typedef struct _function_t function_t;
+struct _function_t {
+  type_t *ret_type;
+  char *name;
+
+  function_t *next;
+};
+
 typedef struct _string_t string_t;
 struct _string_t {
   char *string;
@@ -37,6 +45,7 @@ typedef struct {
   FILE *fp;
 
   variable_t *variables;
+  function_t *functions;
   string_t *strings;
   loop_t *loops;
   defined_type_t *types;

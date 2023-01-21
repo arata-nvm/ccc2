@@ -50,6 +50,29 @@ variable_t *find_variable(codegen_ctx_t *ctx, char *name) {
   return NULL;
 }
 
+function_t *add_function(codegen_ctx_t *ctx, type_t *ret_type, char *name) {
+  function_t *function = calloc(1, sizeof(function_t));
+  function->ret_type = ret_type;
+  function->name = name;
+
+  function->next = ctx->functions;
+  ctx->functions = function;
+
+  return function;
+}
+
+function_t *find_function(codegen_ctx_t *ctx, char *name) {
+  function_t *cur = ctx->functions;
+  while (cur) {
+    if (!strcmp(cur->name, name)) {
+      return cur;
+    }
+    cur = cur->next;
+  }
+
+  return NULL;
+}
+
 int add_string(codegen_ctx_t *ctx, char *string) {
   string_t *str = calloc(1, sizeof(string_t));
   str->string = string;
@@ -307,7 +330,15 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     return new_type(TYPE_INT); // TODO
   case EXPR_ASSIGN:
     return infer_expr_type(ctx, expr->value.assign.dst);
-  case EXPR_CALL:
+  case EXPR_CALL: {
+    function_t *func = find_function(ctx, expr->value.call.name);
+    if (func != NULL) {
+      return func->ret_type;
+    }
+
+    error(expr->pos, "unknown function '%s'\n", expr->value.call.name);
+  }
+
     return new_type(TYPE_INT); // TODO
   case EXPR_REF:
     return ptr_to(infer_expr_type(ctx, expr->value.unary));
@@ -852,8 +883,18 @@ void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params, pos_t *pos) {
 
 void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
   switch (gstmt->type) {
+  case GSTMT_FUNC_DECL: {
+    type_t *ret_type = gstmt->value.func.ret_type;
+    ret_type = complete_type(ctx, ret_type);
+    add_function(ctx, ret_type, gstmt->value.func.name);
+    break;
+  }
   case GSTMT_FUNC:
     init_ctx(ctx, gstmt->value.func.name);
+
+    type_t *ret_type = gstmt->value.func.ret_type;
+    ret_type = complete_type(ctx, ret_type);
+    add_function(ctx, ret_type, gstmt->value.func.name);
 
     gen(ctx, ".global %s\n", ctx->cur_func_name);
     gen(ctx, "%s:\n", ctx->cur_func_name);
@@ -876,9 +917,6 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
   case GSTMT_ENUM:
     define_type(ctx, gstmt->value.type);
     append_enums(ctx, gstmt->value.type->value.enum_.enums);
-    break;
-  case GSTMT_FUNC_DECL:
-    // do nothing
     break;
   case GSTMT_TYPEDEF:
     if (gstmt->value.type->kind == TYPE_ENUM) {
