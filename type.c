@@ -183,12 +183,21 @@ int is_ptr(type_t *type) {
 }
 
 int is_incomlete(type_t *type) {
-  int is_struct_or_union =
-      (type->kind == TYPE_STRUCT || type->kind == TYPE_UNION) &&
-      type->value.struct_union.members == NULL;
-  int is_enum = type->kind == TYPE_ENUM && type->value.enum_.enums == NULL;
-
-  return is_struct_or_union || is_enum;
+  switch (type->kind) {
+  case TYPE_VOID:
+  case TYPE_CHAR:
+  case TYPE_INT:
+    return 0;
+  case TYPE_PTR:
+    return is_incomlete(type->value.ptr);
+  case TYPE_ARRAY:
+    return is_incomlete(type->value.array.elm);
+  case TYPE_STRUCT:
+  case TYPE_UNION:
+    return type->value.struct_union.members == NULL;
+  case TYPE_ENUM:
+    return type->value.enum_.enums == NULL;
+  }
 }
 
 int align_to(int n, int align) { return (n + align - 1) & ~(align - 1); }

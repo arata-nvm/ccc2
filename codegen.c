@@ -95,10 +95,26 @@ type_t *find_type(codegen_ctx_t *ctx, char *tag) {
 }
 
 type_t *complete_type(codegen_ctx_t *ctx, type_t *type) {
-  if (type->kind == TYPE_ENUM) {
-    return find_type(ctx, type->value.enum_.tag);
-  } else {
+  if (!is_incomlete(type)) {
+    return type;
+  }
+
+  switch (type->kind) {
+  case TYPE_VOID:
+  case TYPE_CHAR:
+  case TYPE_INT:
+    return type;
+  case TYPE_PTR:
+    type->value.ptr = complete_type(ctx, type->value.ptr);
+    return type;
+  case TYPE_ARRAY:
+    type->value.array.elm = complete_type(ctx, type->value.array.elm);
+    return type;
+  case TYPE_STRUCT:
+  case TYPE_UNION:
     return find_type(ctx, type->value.struct_union.tag);
+  case TYPE_ENUM:
+    return find_type(ctx, type->value.enum_.tag);
   }
 }
 
@@ -675,9 +691,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
       error(stmt->pos, "variable '%s' already defined\n", name);
     }
     type_t *type = stmt->value.define.type;
-    if (is_incomlete(type)) {
-      type = complete_type(ctx, type);
-    }
+    type = complete_type(ctx, type);
     variable_t *var = add_variable(ctx, type, name);
     if (stmt->value.define.value) {
       gen_expr(ctx, stmt->value.define.value);
@@ -745,9 +759,7 @@ void gen_func_parameter(codegen_ctx_t *ctx, parameter_t *params, pos_t *pos) {
     }
 
     type_t *type = params->type;
-    if (is_incomlete(type)) {
-      type = complete_type(ctx, type);
-    }
+    type = complete_type(ctx, type);
 
     variable_t *var = add_variable(ctx, type, params->name);
     gen_push(ctx, arg_regs[i]);

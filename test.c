@@ -468,6 +468,14 @@ int main() {
     type3_t v56 = ENUM_HOGE;
     assert(0, v56);
   }
+  {
+    type1_t v57;
+    type1_t *v58 = &v57;
+    (*v58).member1 = 1;
+    (*v58).member2 = 2;
+    assert(1, (*v58).member1);
+    assert(2, (*v58).member2);
+  }
 
   return 0;
 }
