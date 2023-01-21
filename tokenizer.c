@@ -190,7 +190,8 @@ token_t *read_string_token(tokenizer_ctx_t *ctx) {
   char buf[256];
   int buf_index = 0;
 
-  int c, is_escaped;
+  int c;
+  int is_escaped;
   while (1) {
     c = read_char_literal(ctx, &is_escaped);
     if (c == EOF) {
@@ -224,8 +225,9 @@ token_t *read_char_token(tokenizer_ctx_t *ctx) {
 }
 
 void read_line_comment(tokenizer_ctx_t *ctx) {
-  while (read_char(ctx) != '\n')
-    ;
+  while (read_char(ctx) != '\n') {
+    // do nothing
+  }
 }
 
 token_t *read_next_token(tokenizer_ctx_t *ctx) {
