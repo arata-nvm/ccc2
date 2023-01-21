@@ -25,8 +25,7 @@ void assert(int expect, int actual);
 void assert(int expect, int actual) {
   if (expect != actual) {
     printf("[NG] %d expected, but got %d\n", expect, actual);
-  } else {
-    printf("[OK]\n");
+    exit(1);
   }
 }
 
@@ -539,6 +538,8 @@ int main() {
   assert(34, '\"');
 
   test7();
+
+  printf("[OK]\n");
 
   return 0;
 }
