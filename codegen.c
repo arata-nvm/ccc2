@@ -85,7 +85,8 @@ void define_type(codegen_ctx_t *ctx, type_t *type) {
 type_t *find_type(codegen_ctx_t *ctx, char *tag) {
   defined_type_t *cur = ctx->types;
   while (cur) {
-    if (!strcmp(cur->type->value.struct_union.tag, tag)) {
+    char *cur_tag = cur->type->value.struct_union.tag;
+    if (cur_tag && !strcmp(cur_tag, tag)) {
       return cur->type;
     }
     cur = cur->next;
