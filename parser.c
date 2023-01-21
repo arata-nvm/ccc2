@@ -119,6 +119,12 @@ expr_t *new_expr(exprtype_t type, pos_t *pos) {
   return expr;
 }
 
+expr_t *new_char_expr(char value, pos_t *pos) {
+  expr_t *expr = new_expr(EXPR_CHAR, pos);
+  expr->value.char_ = value;
+  return expr;
+}
+
 expr_t *new_number_expr(int value, pos_t *pos) {
   expr_t *expr = new_expr(EXPR_NUMBER, pos);
   expr->value.number = value;
@@ -232,6 +238,8 @@ expr_t *parse_primary(parser_ctx_t *ctx) {
     char *name = consume(ctx)->value.ident;
     return new_ident_expr(name, pos);
   }
+  case TOKEN_CHAR_LIT:
+    return new_char_expr(consume(ctx)->value.char_, pos);
   case TOKEN_NUMBER:
     return new_number_expr(consume(ctx)->value.number, pos);
   case TOKEN_STRING:

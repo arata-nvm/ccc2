@@ -239,6 +239,8 @@ void gen_str_addr(codegen_ctx_t *ctx, int str_index) {
 
 type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
+  case EXPR_CHAR:
+    return new_type(TYPE_CHAR);
   case EXPR_NUMBER:
     return new_type(TYPE_INT);
   case EXPR_STRING:
@@ -370,6 +372,10 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
 
 void gen_special_expr(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
+  case EXPR_CHAR:
+    gen(ctx, "  mov x8, %d\n", expr->value.char_);
+    gen_push(ctx, "x8");
+    break;
   case EXPR_NUMBER:
     gen(ctx, "  mov x8, %d\n", expr->value.number);
     gen_push(ctx, "x8");

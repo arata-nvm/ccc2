@@ -529,6 +529,8 @@ int main() {
   assert(1, sizeof(char));
   assert(4, sizeof(int));
   assert(5, sizeof(type1_t));
+  assert(65, 'A');
+  assert(97, 'a');
 
   return 0;
 }

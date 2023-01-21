@@ -81,6 +81,7 @@ typedef enum {
   TOKEN_INC,
   TOKEN_DEC,
   TOKEN_ARROW,
+  TOKEN_CHAR_LIT,
 } tokentype_t;
 
 typedef struct _token_t token_t;
@@ -91,6 +92,7 @@ struct _token_t {
     int number;
     char *ident;
     char *string;
+    char char_;
   } value;
 
   token_t *next;

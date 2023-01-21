@@ -157,6 +157,8 @@ token_t *read_number_token(tokenizer_ctx_t *ctx) {
   return token;
 }
 
+char read_char_literal(tokenizer_ctx_t *ctx) { return read_char(ctx); }
+
 token_t *read_string_token(tokenizer_ctx_t *ctx) {
   pos_t *pos = copy_pos(ctx->cur_pos);
   char buf[256];
@@ -164,7 +166,7 @@ token_t *read_string_token(tokenizer_ctx_t *ctx) {
 
   int c;
   while (1) {
-    c = read_char(ctx);
+    c = read_char_literal(ctx);
     if (c == EOF) {
       error(pos, "missing terminating '\"'\n");
     }
@@ -182,6 +184,16 @@ token_t *read_string_token(tokenizer_ctx_t *ctx) {
   token->value.ident = calloc(1, buf_index);
   strncpy(token->value.string, buf, buf_index);
 
+  return token;
+}
+
+token_t *read_char_token(tokenizer_ctx_t *ctx) {
+  pos_t *pos = copy_pos(ctx->cur_pos);
+  token_t *token = new_token(TOKEN_CHAR_LIT, pos);
+  token->value.char_ = read_char_literal(ctx);
+  if (read_char(ctx) != '\'') {
+    error(pos, "missing terminating '\''\n");
+  }
   return token;
 }
 
@@ -212,6 +224,9 @@ token_t *read_next_token(tokenizer_ctx_t *ctx) {
 
   if (c == '"') {
     return read_string_token(ctx);
+  }
+  if (c == '\'') {
+    return read_char_token(ctx);
   }
 
   switch (c) {
