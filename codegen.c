@@ -443,7 +443,11 @@ void gen_unary_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen_load(ctx, infer_expr_type(ctx, expr), expr->pos);
     break;
   case EXPR_SIZEOF: {
-    type_t *type = infer_expr_type(ctx, expr->value.unary);
+    type_t *type = expr->value.sizeof_.type;
+    if (!type) {
+      type = infer_expr_type(ctx, expr->value.sizeof_.expr);
+    }
+    type = complete_type(ctx, type);
     gen(ctx, "  mov x8, %d\n", type_size(type));
     gen_push(ctx, "x8");
     break;

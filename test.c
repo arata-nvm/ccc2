@@ -526,6 +526,9 @@ int main() {
     }
     assert(1, v64);
   }
+  assert(1, sizeof(char));
+  assert(4, sizeof(int));
+  assert(5, sizeof(type1_t));
 
   return 0;
 }

@@ -91,6 +91,10 @@ struct _expr_t {
       expr_t *expr;
       char *name;
     } member;
+    struct {
+      type_t *type;
+      expr_t *expr;
+    } sizeof_;
   } value;
 };
 

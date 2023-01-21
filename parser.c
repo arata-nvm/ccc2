@@ -78,6 +78,13 @@ typedef_t *find_typedef(parser_ctx_t *ctx, char *name) {
   return NULL;
 }
 
+int is_type(parser_ctx_t *ctx, token_t *token) {
+  return token->type == TOKEN_CHAR || token->type == TOKEN_INT ||
+         token->type == TOKEN_STRUCT || token->type == TOKEN_UNION ||
+         token->type == TOKEN_ENUM || token->type == TOKEN_VOID ||
+         (token->type == TOKEN_IDENT && find_typedef(ctx, token->value.ident));
+}
+
 token_t *peek(parser_ctx_t *ctx) { return ctx->cur_token; }
 
 token_t *consume(parser_ctx_t *ctx) {
@@ -311,7 +318,15 @@ expr_t *parse_unary(parser_ctx_t *ctx) {
     return new_unary_expr(EXPR_NEG, parse_unary(ctx), pos);
   case TOKEN_SIZEOF:
     consume(ctx);
-    return new_unary_expr(EXPR_SIZEOF, parse_unary(ctx), pos);
+    expect(ctx, TOKEN_PAREN_OPEN);
+    expr_t *expr = new_expr(EXPR_SIZEOF, pos);
+    if (is_type(ctx, peek(ctx))) {
+      expr->value.sizeof_.type = parse_type(ctx);
+    } else {
+      expr->value.sizeof_.expr = parse_unary(ctx);
+    }
+    expect(ctx, TOKEN_PAREN_CLOSE);
+    return expr;
   case TOKEN_INC:
     consume(ctx);
     return new_unary_expr(EXPR_INC_PRE, parse_postfix(ctx), pos);
@@ -854,13 +869,6 @@ stmt_t *parse_switch(parser_ctx_t *ctx) {
   stmt->value.switch_.cases = head;
   stmt->value.switch_.default_case = default_case;
   return stmt;
-}
-
-int is_type(parser_ctx_t *ctx, token_t *token) {
-  return token->type == TOKEN_CHAR || token->type == TOKEN_INT ||
-         token->type == TOKEN_STRUCT || token->type == TOKEN_UNION ||
-         token->type == TOKEN_ENUM || token->type == TOKEN_VOID ||
-         (token->type == TOKEN_IDENT && find_typedef(ctx, token->value.ident));
 }
 
 stmt_t *parse_stmt(parser_ctx_t *ctx) {
