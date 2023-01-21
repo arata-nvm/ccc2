@@ -5,6 +5,7 @@ out="tmp.c"
 function process {
   grep -v '^#' "$1" \
   | sed 's/NULL/0/g' \
+  | sed 's/ EOF/ -1/g' \
   >> ${out}
 }
 
@@ -19,3 +20,4 @@ process parser.h
 process codegen.h
 
 process type.c
+process tokenizer.c
