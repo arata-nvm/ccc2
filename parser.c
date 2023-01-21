@@ -169,7 +169,7 @@ stmt_list_t *new_stmt_list(stmt_t *stmt) {
   return stmt_list;
 }
 
-stmt_case_t *new_stmt_case(int value, stmt_list_t *body) {
+stmt_case_t *new_stmt_case(expr_t *value, stmt_list_t *body) {
   stmt_case_t *stmt_case = calloc(1, sizeof(stmt_case_t));
   stmt_case->value = value;
   stmt_case->body = body;
@@ -800,10 +800,10 @@ stmt_t *parse_define(parser_ctx_t *ctx) {
 }
 
 stmt_case_t *parse_case(parser_ctx_t *ctx) {
-  int value = 0;
+  expr_t *value = NULL;
   if (!consume_if(ctx, TOKEN_DEFAULT)) {
     expect(ctx, TOKEN_CASE);
-    value = expect(ctx, TOKEN_NUMBER)->value.number;
+    value = parse_expr(ctx);
   }
   expect(ctx, TOKEN_COLON);
 

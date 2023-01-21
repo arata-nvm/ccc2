@@ -117,7 +117,7 @@ struct _stmt_list_t {
 };
 
 struct _stmt_case_t {
-  int value;
+  expr_t *value;
   stmt_list_t *body;
   int label;
 

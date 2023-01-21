@@ -150,6 +150,22 @@ int next_label(codegen_ctx_t *ctx) {
   return ctx->cur_label;
 }
 
+int eval_const_expr(codegen_ctx_t *ctx, expr_t *expr) {
+  switch (expr->type) {
+  case EXPR_NUMBER:
+    return expr->value.number;
+  case EXPR_IDENT: {
+    int enum_value;
+    if (find_enum(ctx, expr->value.ident, &enum_value)) {
+      return enum_value;
+    }
+    error(expr->pos, "unknown enum '%s'\n", expr->value.ident);
+  }
+  default:
+    error(expr->pos, "unimplemented const expression\n");
+  }
+}
+
 void gen(codegen_ctx_t *ctx, char *format, ...) {
   va_list args;
   va_start(args, format);
@@ -761,7 +777,8 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
       cur_case->label = next_label(ctx);
       gen_pop(ctx, "x8");
       gen_push(ctx, "x8"); // save value
-      gen(ctx, "  subs x8, x8, %d\n", cur_case->value);
+      int value = eval_const_expr(ctx, cur_case->value);
+      gen(ctx, "  subs x8, x8, %d\n", value);
       gen_branch(ctx, "beq", cur_case->label);
 
       cur_case = cur_case->next;
