@@ -586,6 +586,10 @@ expr_t *parse_expr(parser_ctx_t *ctx) { return parse_assign(ctx); }
 stmt_t *parse_return(parser_ctx_t *ctx) {
   pos_t *pos = expect(ctx, TOKEN_RETURN)->pos;
   stmt_t *stmt = new_stmt(STMT_RETURN, pos);
+  if (consume_if(ctx, TOKEN_SEMICOLON)) {
+    return stmt;
+  }
+
   stmt->value.ret = parse_expr(ctx);
   expect(ctx, TOKEN_SEMICOLON);
   return stmt;

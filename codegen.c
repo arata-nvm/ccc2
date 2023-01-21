@@ -676,7 +676,11 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     gen_expr(ctx, stmt->value.expr);
     break;
   case STMT_RETURN:
-    gen_expr(ctx, stmt->value.ret);
+    if (stmt->value.ret) {
+      gen_expr(ctx, stmt->value.ret);
+    } else {
+      gen_push(ctx, "x8"); // push dummy value
+    }
     gen(ctx, "  b .L.%s.ret\n", ctx->cur_func_name);
     break;
   case STMT_IF: {

@@ -51,6 +51,8 @@ int test5(int v1) {
 
 void test6(int v1, ...);
 
+void test7() { return; }
+
 int main() {
   assert(0, 0);
   assert(42, 42);
@@ -535,6 +537,8 @@ int main() {
   assert(92, '\\');
   assert(39, '\'');
   assert(34, '\"');
+
+  test7();
 
   return 0;
 }
