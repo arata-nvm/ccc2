@@ -25,3 +25,4 @@ process codegen.h
 process type.c
 process tokenizer.c
 process error.c
+process parser.c
