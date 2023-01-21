@@ -2,14 +2,20 @@
 
 out="tmp.c"
 
+function process {
+  grep -v '^#' "$1" \
+  | sed 's/NULL/0/g' \
+  >> ${out}
+}
+
 cat > ${out} << EOF
 typedef struct FILE FILE;
 EOF
 
-grep -v '^#' type.h >> ${out}
-grep -v '^#' tokenizer.h >> ${out}
-grep -v '^#' error.h >> ${out}
-grep -v '^#' parser.h >> ${out}
-grep -v '^#' codegen.h >> ${out}
+process type.h
+process tokenizer.h
+process error.h
+process parser.h
+process codegen.h
 
-grep -v '^#' type.c | sed 's/NULL/0/g' >> ${out}
+process type.c
