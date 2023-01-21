@@ -157,20 +157,46 @@ token_t *read_number_token(tokenizer_ctx_t *ctx) {
   return token;
 }
 
-char read_char_literal(tokenizer_ctx_t *ctx) { return read_char(ctx); }
+char read_char_literal(tokenizer_ctx_t *ctx, int *is_escaped) {
+  if (is_escaped) {
+    *is_escaped = 0;
+  }
+
+  char c = read_char(ctx);
+  if (c != '\\') {
+    return c;
+  }
+
+  if (is_escaped) {
+    *is_escaped = 1;
+  }
+  char c2 = read_char(ctx);
+  switch (c2) {
+  case 'n':
+    return '\n';
+  case '\\':
+    return '\\';
+  case '\'':
+    return '\'';
+  case '\"':
+    return '\"';
+  default:
+    error(ctx->cur_pos, "unknown escape literal");
+  }
+}
 
 token_t *read_string_token(tokenizer_ctx_t *ctx) {
   pos_t *pos = copy_pos(ctx->cur_pos);
   char buf[256];
   int buf_index = 0;
 
-  int c;
+  int c, is_escaped;
   while (1) {
-    c = read_char_literal(ctx);
+    c = read_char_literal(ctx, &is_escaped);
     if (c == EOF) {
       error(pos, "missing terminating '\"'\n");
     }
-    if (c == '"') {
+    if (!is_escaped && c == '"') {
       break;
     }
 
@@ -190,7 +216,7 @@ token_t *read_string_token(tokenizer_ctx_t *ctx) {
 token_t *read_char_token(tokenizer_ctx_t *ctx) {
   pos_t *pos = copy_pos(ctx->cur_pos);
   token_t *token = new_token(TOKEN_CHAR_LIT, pos);
-  token->value.char_ = read_char_literal(ctx);
+  token->value.char_ = read_char_literal(ctx, NULL);
   if (read_char(ctx) != '\'') {
     error(pos, "missing terminating '\''\n");
   }

@@ -531,6 +531,10 @@ int main() {
   assert(5, sizeof(type1_t));
   assert(65, 'A');
   assert(97, 'a');
+  assert(10, '\n');
+  assert(92, '\\');
+  assert(39, '\'');
+  assert(34, '\"');
 
   return 0;
 }
