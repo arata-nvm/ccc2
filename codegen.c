@@ -378,6 +378,7 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
     }
     gen_var_addr(ctx, var);
     break;
+  }
   case EXPR_DEREF:
     gen_expr(ctx, expr->value.unary);
     break;
@@ -396,7 +397,6 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
     gen(ctx, "  add x8, x8, %d\n", member->offset);
     gen_push(ctx, "x8");
     break;
-  }
   }
   default:
     error(expr->pos, "cannot generate lvalue: expr=%d\n", expr->type);
