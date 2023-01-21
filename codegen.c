@@ -153,6 +153,8 @@ int next_label(codegen_ctx_t *ctx) {
 
 int eval_const_expr(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
+  case EXPR_CHAR:
+    return expr->value.char_;
   case EXPR_NUMBER:
     return expr->value.number;
   case EXPR_IDENT: {
