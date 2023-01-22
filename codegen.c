@@ -1013,6 +1013,9 @@ void gen_string(codegen_ctx_t *ctx, char *string) {
     case '\"':
       gen(ctx, "\\\"");
       break;
+    case '%':
+      gen(ctx, "%%");
+      break;
     default:
       buf[0] = *p;
       gen(ctx, buf);
