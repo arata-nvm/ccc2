@@ -7,8 +7,7 @@
 void panic(char *format, ...) {
   va_list args;
   va_start(args, format);
-  // vfprintf(stderr, format, args);
-  vprintf(format, args);
+  vfprintf(stderr, format, args);
   va_end(args);
 
   exit(1);
@@ -16,14 +15,12 @@ void panic(char *format, ...) {
 
 void error(pos_t *pos, char *format, ...) {
   if (pos != NULL) {
-    // fprintf(stderr, "%s; ", pos_to_string(pos));
-    printf("%s; ", pos_to_string(pos));
+    fprintf(stderr, "%s; ", pos_to_string(pos));
   }
 
   va_list args;
   va_start(args, format);
-  // vfprintf(stderr, format, args);
-  vprintf(format, args);
+  vfprintf(stderr, format, args);
   va_end(args);
 
   exit(1);

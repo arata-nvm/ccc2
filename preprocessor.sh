@@ -15,6 +15,7 @@ typedef int va_list;
 void va_start() {}
 void va_end() {}
 extern FILE* stdout;
+extern FILE* stderr;
 EOF
 
 process type.h
