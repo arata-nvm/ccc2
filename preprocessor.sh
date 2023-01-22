@@ -1,15 +1,12 @@
 #!/bin/bash -eux
 
-out="tmp.c"
-
 function process {
   grep -v '^#' "$1" \
   | sed 's/NULL/0/g' \
-  | sed 's/ EOF/ -1/g' \
-  >> ${out}
+  | sed 's/ EOF/ -1/g'
 }
 
-cat > ${out} << EOF
+cat << EOF
 typedef struct FILE FILE;
 typedef int va_list;
 void va_start() {}
@@ -18,7 +15,7 @@ extern FILE* stdout;
 extern FILE* stderr;
 EOF
 
-process type.h
+process type.h 
 process tokenizer.h
 process error.h
 process parser.h
