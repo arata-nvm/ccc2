@@ -13,14 +13,15 @@ void push_scope(codegen_ctx_t *ctx) {
   var_scope_t *var_scope = calloc(1, sizeof(var_scope_t));
   var_scope->parent = ctx->var_scopes;
   ctx->var_scopes = var_scope;
+
+  type_scope_t *type_scope = calloc(1, sizeof(type_scope_t));
+  type_scope->parent = ctx->type_scopes;
+  ctx->type_scopes = type_scope;
 }
 
 void pop_scope(codegen_ctx_t *ctx) {
-  if (!ctx->var_scopes->parent) {
-    return;
-  }
-
   ctx->var_scopes = ctx->var_scopes->parent;
+  ctx->type_scopes = ctx->type_scopes->parent;
 }
 
 codegen_ctx_t *new_codegen_ctx(FILE *fp) {
@@ -132,22 +133,38 @@ loop_t *cur_loop(codegen_ctx_t *ctx) { return ctx->loops; }
 
 void pop_loop(codegen_ctx_t *ctx) { ctx->loops = ctx->loops->next; }
 
-void define_type(codegen_ctx_t *ctx, type_t *type) {
+void add_type(codegen_ctx_t *ctx, type_t *type) {
   defined_type_t *defined_type = calloc(1, sizeof(defined_type_t));
   defined_type->type = type;
 
-  defined_type->next = ctx->types;
-  ctx->types = defined_type;
+  type_scope_t *cur_scope = ctx->type_scopes;
+  defined_type->next = cur_scope->types;
+  cur_scope->types = defined_type;
 }
 
-type_t *find_type(codegen_ctx_t *ctx, char *tag) {
-  defined_type_t *cur = ctx->types;
+type_t *find_type_in(codegen_ctx_t *ctx, char *tag, type_scope_t *scope) {
+  defined_type_t *cur = scope->types;
   while (cur) {
     char *cur_tag = cur->type->value.struct_union.tag;
     if (cur_tag && !strcmp(cur_tag, tag)) {
       return cur->type;
     }
     cur = cur->next;
+  }
+
+  return NULL;
+}
+
+type_t *find_type(codegen_ctx_t *ctx, char *tag) {
+  type_scope_t *cur_scope = ctx->type_scopes;
+
+  while (cur_scope) {
+    type_t *type = find_type_in(ctx, tag, cur_scope);
+    if (type) {
+      return type;
+    }
+
+    cur_scope = cur_scope->parent;
   }
 
   return NULL;
@@ -952,15 +969,15 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
     break;
   case GSTMT_STRUCT:
   case GSTMT_UNION:
-    define_type(ctx, gstmt->value.type);
+    add_type(ctx, gstmt->value.type);
     break;
   case GSTMT_ENUM:
-    define_type(ctx, gstmt->value.type);
+    add_type(ctx, gstmt->value.type);
     append_enums(ctx, gstmt->value.type->value.enum_.enums);
     break;
   case GSTMT_TYPEDEF:
     if (gstmt->value.type->kind == TYPE_ENUM) {
-      define_type(ctx, gstmt->value.type);
+      add_type(ctx, gstmt->value.type);
       append_enums(ctx, gstmt->value.type->value.enum_.enums);
     }
     break;

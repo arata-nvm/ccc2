@@ -549,6 +549,16 @@ int main() {
     }
     assert(0, i);
   }
+  {
+    struct a {
+      int a;
+    } s1;
+    {
+      struct a {
+        char a;
+      } s2;
+    }
+  }
 
   printf("[OK]\n");
 
