@@ -187,10 +187,20 @@ type_t *complete_type(codegen_ctx_t *ctx, type_t *type) {
     type->value.array.elm = complete_type(ctx, type->value.array.elm);
     return type;
   case TYPE_STRUCT:
-  case TYPE_UNION:
-    return find_type(ctx, type->value.struct_union.tag);
-  case TYPE_ENUM:
-    return find_type(ctx, type->value.enum_.tag);
+  case TYPE_UNION: {
+    type_t *completed_type = find_type(ctx, type->value.struct_union.tag);
+    if (completed_type) {
+      return completed_type;
+    }
+    return type;
+  }
+  case TYPE_ENUM: {
+    type_t *completed_type = find_type(ctx, type->value.enum_.tag);
+    if (completed_type) {
+      return completed_type;
+    }
+    return type;
+  }
   }
 }
 
@@ -410,7 +420,7 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
       error(expr->pos, "unknown member: type=%d, name=%s\n", mtype->kind, name);
     }
 
-    return member->type;
+    return complete_type(ctx, member->type);
   }
   case EXPR_INC_PRE:
   case EXPR_INC_POST:
