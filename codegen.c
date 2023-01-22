@@ -4,7 +4,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-char *arg_regs[] = {"x0", "x1", "x2", "x3", "x4", "x5", "x6"};
+char *arg_regs[7];
+
+void init_arg_regs() {
+  arg_regs[0] = "x0";
+  arg_regs[1] = "x1";
+  arg_regs[2] = "x2";
+  arg_regs[3] = "x3";
+  arg_regs[4] = "x4";
+  arg_regs[5] = "x5";
+  arg_regs[6] = "x6";
+  arg_regs[7] = "x7";
+}
 
 void gen_expr(codegen_ctx_t *ctx, expr_t *expr);
 void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt);
@@ -461,7 +472,6 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var != NULL) {
       gen_var_addr(ctx, var);
-      ;
       break;
     }
 
@@ -1125,6 +1135,7 @@ void gen_data(codegen_ctx_t *ctx) {
 void gen_code(program_t *program, FILE *fp) {
   codegen_ctx_t *ctx = new_codegen_ctx(fp, program->globals);
 
+  init_arg_regs();
   gen_text(ctx, program->body);
   gen_data(ctx);
 }
