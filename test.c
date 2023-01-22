@@ -54,6 +54,7 @@ void test7() { return; }
 
 int global1;
 extern int global2;
+int global3[2];
 
 int main() {
   assert(0, 0);
@@ -566,6 +567,14 @@ int main() {
     assert(0, global1);
     global1 = 1;
     assert(1, global1);
+  }
+  {
+    assert(0, global3[0]);
+    assert(0, global3[1]);
+    global3[0] = 1;
+    global3[1] = 2;
+    assert(1, global3[0]);
+    assert(2, global3[1]);
   }
 
   printf("[OK]\n");

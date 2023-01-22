@@ -974,6 +974,7 @@ global_stmt_t *parse_typedef(parser_ctx_t *ctx) {
 }
 
 global_stmt_t *parse_global_type(parser_ctx_t *ctx, type_t *type, pos_t *pos) {
+  expect(ctx, TOKEN_SEMICOLON);
   global_stmt_t *gstmt;
   switch (type->kind) {
   case TYPE_STRUCT:
@@ -994,6 +995,9 @@ global_stmt_t *parse_global_type(parser_ctx_t *ctx, type_t *type, pos_t *pos) {
 
 global_stmt_t *parse_global_var(parser_ctx_t *ctx, type_t *type, char *name,
                                 pos_t *pos) {
+  type = parse_type_post(ctx, type);
+  expect(ctx, TOKEN_SEMICOLON);
+
   add_global_var(ctx, type, name);
 
   global_stmt_t *gstmt = new_global_stmt(GSTMT_DEFINE, pos);
@@ -1028,16 +1032,16 @@ global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
   }
 
   type_t *type = parse_type(ctx);
-  if (consume_if(ctx, TOKEN_SEMICOLON)) {
+  if (peek(ctx)->type == TOKEN_SEMICOLON) {
     return parse_global_type(ctx, type, pos);
   }
 
   char *name = expect(ctx, TOKEN_IDENT)->value.ident;
-  if (consume_if(ctx, TOKEN_SEMICOLON)) {
-    return parse_global_var(ctx, type, name, pos);
+  if (peek(ctx)->type == TOKEN_PAREN_OPEN) {
+    return parse_global_func(ctx, type, name, pos);
   }
 
-  return parse_global_func(ctx, type, name, pos);
+  return parse_global_var(ctx, type, name, pos);
 }
 
 program_t *parse(token_t *token) {
