@@ -103,6 +103,8 @@ void replace_reserved_tokens(token_t *token) {
     token->type = TOKEN_ENUM;
   } else if (!strcmp(ident, "void")) {
     token->type = TOKEN_VOID;
+  } else if (!strcmp(ident, "extern")) {
+    token->type = TOKEN_EXTERN;
   }
 }
 

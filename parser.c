@@ -766,6 +766,11 @@ type_t *parse_enum(parser_ctx_t *ctx) {
 }
 
 type_t *parse_type(parser_ctx_t *ctx) {
+  int is_extern = 0;
+  if (consume_if(ctx, TOKEN_EXTERN)) {
+    is_extern = 1;
+  }
+
   type_t *type;
   switch (peek(ctx)->type) {
   case TOKEN_VOID:
@@ -804,6 +809,7 @@ type_t *parse_type(parser_ctx_t *ctx) {
     type = ptr_to(type);
   }
 
+  type->is_extern = is_extern;
   return type;
 }
 

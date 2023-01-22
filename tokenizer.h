@@ -82,6 +82,7 @@ typedef enum {
   TOKEN_DEC,
   TOKEN_ARROW,
   TOKEN_CHAR_LIT,
+  TOKEN_EXTERN,
 } tokentype_t;
 
 typedef struct _token_t token_t;

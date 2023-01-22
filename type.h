@@ -50,6 +50,7 @@ struct _type_t {
       enum_t *enums;
     } enum_;
   } value;
+  int is_extern;
 };
 
 type_t *new_type(typekind_t kind);

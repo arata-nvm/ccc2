@@ -53,6 +53,7 @@ void test6(int v1, ...);
 void test7() { return; }
 
 int global1;
+extern int global2;
 
 int main() {
   assert(0, 0);

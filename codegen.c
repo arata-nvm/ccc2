@@ -1101,6 +1101,11 @@ void gen_strings(codegen_ctx_t *ctx) {
 void gen_globals(codegen_ctx_t *ctx) {
   global_var_t *cur = ctx->globals;
   while (cur) {
+    if (cur->type->is_extern) {
+      cur = cur->next;
+      continue;
+    }
+
     int size = type_size(cur->type);
     gen(ctx, ".global %s\n", cur->name);
     gen(ctx, "%s:\n", cur->name);
