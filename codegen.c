@@ -9,15 +9,29 @@ char *arg_regs[] = {"x0", "x1", "x2", "x3", "x4", "x5", "x6"};
 void gen_expr(codegen_ctx_t *ctx, expr_t *expr);
 void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt);
 
+void push_scope(codegen_ctx_t *ctx) {
+  var_scope_t *var_scope = calloc(1, sizeof(var_scope_t));
+  var_scope->parent = ctx->var_scopes;
+  ctx->var_scopes = var_scope;
+}
+
+void pop_scope(codegen_ctx_t *ctx) {
+  if (!ctx->var_scopes->parent) {
+    return;
+  }
+
+  ctx->var_scopes = ctx->var_scopes->parent;
+}
+
 codegen_ctx_t *new_codegen_ctx(FILE *fp) {
   codegen_ctx_t *ctx = calloc(1, sizeof(codegen_ctx_t));
   ctx->fp = fp;
   ctx->cur_offset = 16;
+  push_scope(ctx);
   return ctx;
 }
 
 void init_ctx(codegen_ctx_t *ctx, char *func_name) {
-  ctx->variables = NULL;
   ctx->cur_offset = 16;
   ctx->cur_label = 0;
   ctx->cur_func_name = func_name;
@@ -32,14 +46,16 @@ variable_t *add_variable(codegen_ctx_t *ctx, type_t *type, char *name) {
   ctx->cur_offset =
       align_to(ctx->cur_offset + type_size(type), type_align(type));
 
-  variable->next = ctx->variables;
-  ctx->variables = variable;
+  var_scope_t *cur_scope = ctx->var_scopes;
+  variable->next = cur_scope->variables;
+  cur_scope->variables = variable;
 
   return variable;
 }
 
-variable_t *find_variable(codegen_ctx_t *ctx, char *name) {
-  variable_t *cur = ctx->variables;
+variable_t *find_variable_in(codegen_ctx_t *ctx, char *name,
+                             var_scope_t *scope) {
+  variable_t *cur = scope->variables;
   while (cur) {
     if (!strcmp(cur->name, name)) {
       return cur;
@@ -48,6 +64,25 @@ variable_t *find_variable(codegen_ctx_t *ctx, char *name) {
   }
 
   return NULL;
+}
+
+variable_t *find_variable(codegen_ctx_t *ctx, char *name) {
+  var_scope_t *cur_scope = ctx->var_scopes;
+
+  while (cur_scope) {
+    variable_t *variable = find_variable_in(ctx, name, cur_scope);
+    if (variable) {
+      return variable;
+    }
+
+    cur_scope = cur_scope->parent;
+  }
+
+  return NULL;
+}
+
+int is_variable_already_defined(codegen_ctx_t *ctx, char *name) {
+  return find_variable_in(ctx, name, ctx->var_scopes) != NULL;
 }
 
 function_t *add_function(codegen_ctx_t *ctx, type_t *ret_type, char *name) {
@@ -792,11 +827,13 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     break;
   }
   case STMT_BLOCK:
+    push_scope(ctx);
     gen_stmt_list(ctx, stmt->value.block);
+    pop_scope(ctx);
     break;
   case STMT_DEFINE: {
     char *name = stmt->value.define.name;
-    if (find_variable(ctx, name) != NULL) {
+    if (is_variable_already_defined(ctx, name)) {
       error(stmt->pos, "variable '%s' already defined\n", name);
     }
     type_t *type = stmt->value.define.type;
@@ -891,6 +928,7 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
   }
   case GSTMT_FUNC:
     init_ctx(ctx, gstmt->value.func.name);
+    push_scope(ctx);
 
     type_t *ret_type = gstmt->value.func.ret_type;
     ret_type = complete_type(ctx, ret_type);
@@ -909,6 +947,8 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
     gen(ctx, "  mov sp, x29\n");
     gen(ctx, "  ldp x29, x30, [sp], 0x100\n");
     gen(ctx, "  ret\n");
+
+    pop_scope(ctx);
     break;
   case GSTMT_STRUCT:
   case GSTMT_UNION:

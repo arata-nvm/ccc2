@@ -41,14 +41,30 @@ struct _defined_type_t {
   defined_type_t *next;
 };
 
+typedef struct _var_scope_t var_scope_t;
+struct _var_scope_t {
+  variable_t *variables;
+
+  var_scope_t *parent;
+};
+
+typedef struct _type_scope_t type_scope_t;
+struct _type_scope_t {
+  defined_type_t *types;
+
+  type_scope_t *parent;
+};
+
 typedef struct {
   FILE *fp;
 
-  variable_t *variables;
+  var_scope_t *var_scopes;
+  type_scope_t *type_scopes;
+
   function_t *functions;
   string_t *strings;
   loop_t *loops;
-  defined_type_t *types;
+  // defined_type_t *types;
   enum_t *enums;
 
   char *cur_func_name;

@@ -538,6 +538,17 @@ int main() {
   assert(34, '\"');
 
   test7();
+  {
+    int i = 0;
+    assert(0, i);
+    {
+      int i = 1;
+      assert(1, i);
+      i = 2;
+      assert(2, i);
+    }
+    assert(0, i);
+  }
 
   printf("[OK]\n");
 
