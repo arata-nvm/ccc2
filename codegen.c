@@ -24,10 +24,11 @@ void pop_scope(codegen_ctx_t *ctx) {
   ctx->type_scopes = ctx->type_scopes->parent;
 }
 
-codegen_ctx_t *new_codegen_ctx(FILE *fp) {
+codegen_ctx_t *new_codegen_ctx(FILE *fp, global_var_t *globals) {
   codegen_ctx_t *ctx = calloc(1, sizeof(codegen_ctx_t));
   ctx->fp = fp;
   ctx->cur_offset = 16;
+  ctx->globals = globals;
   push_scope(ctx);
   return ctx;
 }
@@ -231,6 +232,18 @@ int find_enum(codegen_ctx_t *ctx, char *name, int *value) {
   return 0;
 }
 
+global_var_t *find_global(codegen_ctx_t *ctx, char *name) {
+  global_var_t *cur = ctx->globals;
+  while (cur) {
+    if (!strcmp(cur->name, name)) {
+      return cur;
+    }
+    cur = cur->next;
+  }
+
+  return NULL;
+}
+
 int next_label(codegen_ctx_t *ctx) {
   ctx->cur_label++;
   return ctx->cur_label;
@@ -324,6 +337,12 @@ void gen_str_addr(codegen_ctx_t *ctx, int str_index) {
   gen_push(ctx, "x8");
 }
 
+void gen_global_addr(codegen_ctx_t *ctx, global_var_t *global) {
+  gen(ctx, "  adrp x8, %s\n", global->name);
+  gen(ctx, "  add x8, x8, :lo12:%s\n", global->name);
+  gen_push(ctx, "x8");
+}
+
 type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_CHAR:
@@ -336,6 +355,11 @@ type_t *infer_expr_type(codegen_ctx_t *ctx, expr_t *expr) {
     variable_t *var = find_variable(ctx, expr->value.ident);
     if (var != NULL) {
       return var->type;
+    }
+
+    global_var_t *global = find_global(ctx, expr->value.ident);
+    if (global != NULL) {
+      return complete_type(ctx, global->type);
     }
 
     int enum_value;
@@ -435,10 +459,19 @@ void gen_lvalue(codegen_ctx_t *ctx, expr_t *expr) {
   switch (expr->type) {
   case EXPR_IDENT: {
     variable_t *var = find_variable(ctx, expr->value.ident);
-    if (var == NULL) {
-      error(expr->pos, "unknown variable '%s'\n", expr->value.ident);
+    if (var != NULL) {
+      gen_var_addr(ctx, var);
+      ;
+      break;
     }
-    gen_var_addr(ctx, var);
+
+    global_var_t *global = find_global(ctx, expr->value.ident);
+    if (global != NULL) {
+      gen_global_addr(ctx, global);
+      break;
+    }
+
+    error(expr->pos, "unknown variable '%s'\n", expr->value.ident);
     break;
   }
   case EXPR_DEREF:
@@ -486,6 +519,15 @@ void gen_special_expr(codegen_ctx_t *ctx, expr_t *expr) {
       gen_var_addr(ctx, var);
       if (var->type->kind != TYPE_ARRAY) {
         gen_load(ctx, var->type, expr->pos);
+      }
+      break;
+    }
+
+    global_var_t *global = find_global(ctx, expr->value.ident);
+    if (global != NULL) {
+      gen_global_addr(ctx, global);
+      if (global->type->kind != TYPE_ARRAY) {
+        gen_load(ctx, global->type, expr->pos);
       }
       break;
     }
@@ -991,10 +1033,15 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
       append_enums(ctx, gstmt->value.type->value.enum_.enums);
     }
     break;
+  case GSTMT_DEFINE:
+    // do nothing
+    break;
   }
 }
 
 void gen_text(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
+  gen(ctx, ".text\n");
+
   global_stmt_t *cur = gstmt;
   while (cur) {
     gen_global_stmt(ctx, cur);
@@ -1038,7 +1085,7 @@ void gen_string(codegen_ctx_t *ctx, char *string) {
   gen(ctx, "\\0\"\n");
 }
 
-void gen_data(codegen_ctx_t *ctx) {
+void gen_strings(codegen_ctx_t *ctx) {
   string_t *cur = ctx->strings;
   int str_index = ctx->cur_string;
 
@@ -1051,8 +1098,27 @@ void gen_data(codegen_ctx_t *ctx) {
   }
 }
 
+void gen_globals(codegen_ctx_t *ctx) {
+  global_var_t *cur = ctx->globals;
+  while (cur) {
+    int size = type_size(cur->type);
+    gen(ctx, ".global %s\n", cur->name);
+    gen(ctx, "%s:\n", cur->name);
+    gen(ctx, "  .zero %d\n", size);
+
+    cur = cur->next;
+  }
+}
+
+void gen_data(codegen_ctx_t *ctx) {
+  gen(ctx, ".data\n");
+
+  gen_strings(ctx);
+  gen_globals(ctx);
+}
+
 void gen_code(program_t *program, FILE *fp) {
-  codegen_ctx_t *ctx = new_codegen_ctx(fp);
+  codegen_ctx_t *ctx = new_codegen_ctx(fp, program->globals);
 
   gen_text(ctx, program->body);
   gen_data(ctx);

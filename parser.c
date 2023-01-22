@@ -85,6 +85,15 @@ int is_type(parser_ctx_t *ctx, token_t *token) {
          (token->type == TOKEN_IDENT && find_typedef(ctx, token->value.ident));
 }
 
+void add_global_var(parser_ctx_t *ctx, type_t *type, char *name) {
+  global_var_t *global = calloc(1, sizeof(global_var_t));
+  global->type = type;
+  global->name = name;
+
+  global->next = ctx->globals;
+  ctx->globals = global;
+}
+
 token_t *peek(parser_ctx_t *ctx) { return ctx->cur_token; }
 
 token_t *consume(parser_ctx_t *ctx) {
@@ -203,9 +212,10 @@ global_stmt_t *new_global_stmt(global_stmttype_t type, pos_t *pos) {
   return gstmt;
 }
 
-program_t *new_program(global_stmt_t *body) {
+program_t *new_program(global_stmt_t *body, global_var_t *globals) {
   program_t *program = calloc(1, sizeof(program_t));
   program->body = body;
+  program->globals = globals;
   return program;
 }
 
@@ -957,37 +967,40 @@ global_stmt_t *parse_typedef(parser_ctx_t *ctx) {
   return gstmt;
 }
 
-global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
+global_stmt_t *parse_global_type(parser_ctx_t *ctx, type_t *type, pos_t *pos) {
   global_stmt_t *gstmt;
-  pos_t *pos = peek(ctx)->pos;
-
-  if (peek(ctx)->type == TOKEN_TYPEDEF) {
-    return parse_typedef(ctx);
+  switch (type->kind) {
+  case TYPE_STRUCT:
+    gstmt = new_global_stmt(GSTMT_STRUCT, pos);
+    break;
+  case TYPE_UNION:
+    gstmt = new_global_stmt(GSTMT_UNION, pos);
+    break;
+  case TYPE_ENUM:
+    gstmt = new_global_stmt(GSTMT_ENUM, pos);
+    break;
+  default:
+    error(pos, "unexpected type: kind=%d\n", type->kind);
   }
+  gstmt->value.type = type;
+  return gstmt;
+}
 
-  type_t *type = parse_type(ctx);
-  if (peek(ctx)->type != TOKEN_IDENT) {
-    expect(ctx, TOKEN_SEMICOLON);
-    switch (type->kind) {
-    case TYPE_STRUCT:
-      gstmt = new_global_stmt(GSTMT_STRUCT, pos);
-      break;
-    case TYPE_UNION:
-      gstmt = new_global_stmt(GSTMT_UNION, pos);
-      break;
-    case TYPE_ENUM:
-      gstmt = new_global_stmt(GSTMT_ENUM, pos);
-      break;
-    default:
-      error(pos, "unexpected type: kind=%d\n", type->kind);
-    }
-    gstmt->value.type = type;
-    return gstmt;
-  }
+global_stmt_t *parse_global_var(parser_ctx_t *ctx, type_t *type, char *name,
+                                pos_t *pos) {
+  add_global_var(ctx, type, name);
 
-  gstmt = new_global_stmt(GSTMT_FUNC, pos);
+  global_stmt_t *gstmt = new_global_stmt(GSTMT_DEFINE, pos);
+  gstmt->value.define.type = type;
+  gstmt->value.define.name = name;
+  return gstmt;
+}
+
+global_stmt_t *parse_global_func(parser_ctx_t *ctx, type_t *type, char *name,
+                                 pos_t *pos) {
+  global_stmt_t *gstmt = new_global_stmt(GSTMT_FUNC, pos);
   gstmt->value.func.ret_type = type;
-  gstmt->value.func.name = expect(ctx, TOKEN_IDENT)->value.ident;
+  gstmt->value.func.name = name;
   expect(ctx, TOKEN_PAREN_OPEN);
   gstmt->value.func.params = parse_parameter(ctx);
   expect(ctx, TOKEN_PAREN_CLOSE);
@@ -998,8 +1011,27 @@ global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
   }
 
   gstmt->value.func.body = parse_stmt(ctx);
-
   return gstmt;
+}
+
+global_stmt_t *parse_global_stmt(parser_ctx_t *ctx) {
+  pos_t *pos = peek(ctx)->pos;
+
+  if (peek(ctx)->type == TOKEN_TYPEDEF) {
+    return parse_typedef(ctx);
+  }
+
+  type_t *type = parse_type(ctx);
+  if (consume_if(ctx, TOKEN_SEMICOLON)) {
+    return parse_global_type(ctx, type, pos);
+  }
+
+  char *name = expect(ctx, TOKEN_IDENT)->value.ident;
+  if (consume_if(ctx, TOKEN_SEMICOLON)) {
+    return parse_global_var(ctx, type, name, pos);
+  }
+
+  return parse_global_func(ctx, type, name, pos);
 }
 
 program_t *parse(token_t *token) {
@@ -1014,5 +1046,5 @@ program_t *parse(token_t *token) {
     }
   }
 
-  return new_program(head);
+  return new_program(head, ctx->globals);
 }

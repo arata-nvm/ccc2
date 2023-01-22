@@ -65,6 +65,7 @@ typedef struct {
   string_t *strings;
   loop_t *loops;
   enum_t *enums;
+  global_var_t *globals;
 
   char *cur_func_name;
 

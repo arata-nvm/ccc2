@@ -52,6 +52,8 @@ void test6(int v1, ...);
 
 void test7() { return; }
 
+int global1;
+
 int main() {
   assert(0, 0);
   assert(42, 42);
@@ -558,6 +560,11 @@ int main() {
         char a;
       } s2;
     }
+  }
+  {
+    assert(0, global1);
+    global1 = 1;
+    assert(1, global1);
   }
 
   printf("[OK]\n");

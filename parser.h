@@ -10,9 +10,18 @@ struct _typedef_t {
   typedef_t *next;
 };
 
+typedef struct _global_var_t global_var_t;
+struct _global_var_t {
+  type_t *type;
+  char *name;
+
+  global_var_t *next;
+};
+
 typedef struct {
   token_t *cur_token;
   typedef_t *typedefs;
+  global_var_t *globals;
 } parser_ctx_t;
 
 typedef enum {
@@ -172,6 +181,7 @@ typedef enum {
   GSTMT_TYPEDEF,
   GSTMT_UNION,
   GSTMT_ENUM,
+  GSTMT_DEFINE,
 } global_stmttype_t;
 
 typedef struct _parameter_t parameter_t;
@@ -195,7 +205,10 @@ struct _global_stmt_t {
       stmt_t *body;
     } func;
     type_t *type;
-
+    struct {
+      type_t *type;
+      char *name;
+    } define;
   } value;
 
   global_stmt_t *next;
@@ -203,6 +216,7 @@ struct _global_stmt_t {
 
 typedef struct {
   global_stmt_t *body;
+  global_var_t *globals;
 } program_t;
 
 program_t *parse(token_t *token);
