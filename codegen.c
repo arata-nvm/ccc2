@@ -567,10 +567,15 @@ void gen_special_expr(codegen_ctx_t *ctx, expr_t *expr) {
       }
 
       gen_expr(ctx, cur_arg->value);
-      gen_pop(ctx, arg_regs[i]);
 
       cur_arg = cur_arg->next;
       i++;
+    }
+
+    int j = 0;
+    while (j < i) {
+      gen_pop(ctx, arg_regs[i - j - 1]);
+      j++;
     }
 
     gen(ctx, "  bl %s\n", expr->value.ident);
