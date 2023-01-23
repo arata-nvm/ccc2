@@ -607,11 +607,13 @@ void gen_unary_expr(codegen_ctx_t *ctx, expr_t *expr) {
   }
   case EXPR_NOT:
     gen_expr(ctx, expr->value.unary);
+    gen_pop(ctx, "x8");
     gen(ctx, "  mvn x8, x8\n");
     gen_push(ctx, "x8");
     break;
   case EXPR_NEG:
     gen_expr(ctx, expr->value.unary);
+    gen_pop(ctx, "x8");
     gen(ctx, "  subs x8, x8, 0\n");
     gen(ctx, "  cset x8, eq\n");
     gen_push(ctx, "x8");
@@ -866,6 +868,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
 
     gen_label(ctx, cond_label);
     gen_expr(ctx, stmt->value.while_.cond);
+    gen_pop(ctx, "x8");
     gen(ctx, "  subs x8, x8, 0\n");
     gen_branch(ctx, "beq", end_label);
 
@@ -889,6 +892,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     gen_label(ctx, cond_label);
     if (stmt->value.for_.cond) {
       gen_expr(ctx, stmt->value.for_.cond);
+      gen_pop(ctx, "x8");
       gen(ctx, "  subs x8, x8, 0\n");
       gen_branch(ctx, "beq", end_label);
     }
