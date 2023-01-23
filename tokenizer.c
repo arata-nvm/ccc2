@@ -51,7 +51,7 @@ void unread_char(tokenizer_ctx_t *ctx, int c) {
 
 void skip_whitespaces(tokenizer_ctx_t *ctx) {
   int c = read_char(ctx);
-  while (isspace(c)) {
+  while (c != EOF && isspace(c)) {
     c = read_char(ctx);
   }
   unread_char(ctx, c);
