@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-char *arg_regs[7];
+char *arg_regs[8];
 
 void init_arg_regs() {
   arg_regs[0] = "x0";
