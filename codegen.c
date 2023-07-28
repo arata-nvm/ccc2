@@ -35,9 +35,11 @@ void pop_scope(codegen_ctx_t *ctx) {
   ctx->type_scopes = ctx->type_scopes->parent;
 }
 
-codegen_ctx_t *new_codegen_ctx(FILE *fp, global_var_t *globals) {
+codegen_ctx_t *new_codegen_ctx(char *in_filepath, FILE *out_fp,
+                               global_var_t *globals) {
   codegen_ctx_t *ctx = calloc(1, sizeof(codegen_ctx_t));
-  ctx->fp = fp;
+  ctx->in_filepath = in_filepath;
+  ctx->out_fp = out_fp;
   ctx->cur_offset = 16;
   ctx->globals = globals;
   push_scope(ctx);
@@ -281,7 +283,7 @@ int eval_const_expr(codegen_ctx_t *ctx, expr_t *expr) {
 void gen(codegen_ctx_t *ctx, char *format, ...) {
   va_list args;
   va_start(args, format);
-  vfprintf(ctx->fp, format, args);
+  vfprintf(ctx->out_fp, format, args);
   va_end(args);
 }
 
@@ -825,6 +827,7 @@ void gen_stmt_list(codegen_ctx_t *ctx, stmt_list_t *list) {
 }
 
 void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
+  gen(ctx, ".loc 1 %d %d\n", stmt->pos->line, stmt->pos->column);
   switch (stmt->type) {
   case STMT_EXPR:
     gen_expr(ctx, stmt->value.expr);
@@ -1024,6 +1027,7 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
 
     gen(ctx, ".global %s\n", ctx->cur_func_name);
     gen(ctx, "%s:\n", ctx->cur_func_name);
+    gen(ctx, ".loc 1 %d %d\n", gstmt->pos->line, gstmt->pos->column);
     gen(ctx, "  stp x29, x30, [sp, -0x100]!\n"); // TODO
     gen(ctx, "  mov x29, sp\n");
 
@@ -1060,6 +1064,7 @@ void gen_global_stmt(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
 
 void gen_text(codegen_ctx_t *ctx, global_stmt_t *gstmt) {
   gen(ctx, ".text\n");
+  gen(ctx, ".file 1 \"%s\"\n", ctx->in_filepath);
 
   global_stmt_t *cur = gstmt;
   while (cur) {
@@ -1141,8 +1146,8 @@ void gen_data(codegen_ctx_t *ctx) {
   gen_globals(ctx);
 }
 
-void gen_code(program_t *program, FILE *fp) {
-  codegen_ctx_t *ctx = new_codegen_ctx(fp, program->globals);
+void gen_code(program_t *program, char *in_filepath, FILE *out_fp) {
+  codegen_ctx_t *ctx = new_codegen_ctx(in_filepath, out_fp, program->globals);
 
   init_arg_regs();
   gen_text(ctx, program->body);

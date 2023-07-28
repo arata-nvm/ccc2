@@ -56,7 +56,8 @@ struct _type_scope_t {
 };
 
 typedef struct {
-  FILE *fp;
+  char *in_filepath;
+  FILE *out_fp;
 
   var_scope_t *var_scopes;
   type_scope_t *type_scopes;
@@ -74,4 +75,4 @@ typedef struct {
   int cur_string;
 } codegen_ctx_t;
 
-void gen_code(program_t *program, FILE *fp);
+void gen_code(program_t *program, char *in_filepath, FILE *out_fp);

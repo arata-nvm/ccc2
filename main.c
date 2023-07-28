@@ -10,14 +10,15 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  FILE *fp = fopen(argv[1], "r");
+  char *filepath = argv[1];
+  FILE *fp = fopen(filepath, "r");
   if (fp == NULL) {
     panic("failed to open file '%s'\n", argv[1]);
   }
 
   token_t *token = tokenize(fp);
   program_t *program = parse(token);
-  gen_code(program, stdout);
+  gen_code(program, filepath, stdout);
 
   return 0;
 }
