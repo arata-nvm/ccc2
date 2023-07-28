@@ -308,9 +308,11 @@ void gen_load(codegen_ctx_t *ctx, type_t *type, pos_t *pos) {
   switch (type_size(type)) {
   case 1:
     gen(ctx, "  ldrb w8, [x8]\n");
+    gen(ctx, "  sxtb x8, w8\n");
     break;
   case 4:
     gen(ctx, "  ldr w8, [x8]\n");
+    gen(ctx, "  sxtw x8, w8\n");
     break;
   case 8:
     gen(ctx, "  ldr x8, [x8]\n");
@@ -623,13 +625,13 @@ void gen_unary_expr(codegen_ctx_t *ctx, expr_t *expr) {
     gen_pop(ctx, "x8");
     gen(ctx, "  subs x8, x8, 0\n");
     gen(ctx, "  cset x8, eq\n");
-    gen_push(ctx, "x8");
+    gen_push(ctx, "x8"); // dup
     break;
   case EXPR_INC_PRE:
     gen_expr(ctx, expr->value.unary);
     gen_pop(ctx, "x8");
     gen(ctx, "  add x8, x8, 1\n"); // TODO
-    gen_push(ctx, "x8");
+    gen_push(ctx, "x8");           // dup
     gen_push(ctx, "x8");
 
     gen_lvalue(ctx, expr->value.unary);
@@ -658,7 +660,7 @@ void gen_unary_expr(codegen_ctx_t *ctx, expr_t *expr) {
   case EXPR_DEC_POST:
     gen_expr(ctx, expr->value.unary);
     gen_pop(ctx, "x8");
-    gen_push(ctx, "x8");
+    gen_push(ctx, "x8");           // dup
     gen(ctx, "  sub x8, x8, 1\n"); // TODO
     gen_push(ctx, "x8");
 
@@ -676,6 +678,7 @@ void gen_binary_expr(codegen_ctx_t *ctx, expr_t *expr) {
     int skip_label = next_label(ctx);
     gen_expr(ctx, expr->value.binary.lhs);
     gen_pop(ctx, "x8");
+    gen_push(ctx, "x8"); // dup
     gen(ctx, "  subs x8, x8, 0\n");
     gen_branch(ctx, "beq", skip_label);
     gen_expr(ctx, expr->value.binary.rhs);
@@ -686,6 +689,7 @@ void gen_binary_expr(codegen_ctx_t *ctx, expr_t *expr) {
     int skip_label = next_label(ctx);
     gen_expr(ctx, expr->value.binary.lhs);
     gen_pop(ctx, "x8");
+    gen_push(ctx, "x8"); // dup
     gen(ctx, "  subs x8, x8, 0\n");
     gen_branch(ctx, "bne", skip_label);
     gen_expr(ctx, expr->value.binary.rhs);
@@ -831,6 +835,7 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
   switch (stmt->type) {
   case STMT_EXPR:
     gen_expr(ctx, stmt->value.expr);
+    gen_pop(ctx, "x8"); // pop expr value
     break;
   case STMT_RETURN:
     if (stmt->value.ret) {
@@ -948,13 +953,12 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     push_loop(ctx, merge_label, -1);
 
     gen_expr(ctx, stmt->value.switch_.value);
+    gen_pop(ctx, "x8");
     stmt_case_t *cur_case = stmt->value.switch_.cases;
     while (cur_case) {
       cur_case->label = next_label(ctx);
-      gen_pop(ctx, "x8");
-      gen_push(ctx, "x8"); // save value
       int value = eval_const_expr(ctx, cur_case->value);
-      gen(ctx, "  subs x8, x8, %d\n", value);
+      gen(ctx, "  cmp x8, %d\n", value);
       gen_branch(ctx, "beq", cur_case->label);
 
       cur_case = cur_case->next;
@@ -970,7 +974,6 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
     cur_case = stmt->value.switch_.cases;
     while (cur_case) {
       gen_label(ctx, cur_case->label);
-      gen_pop(ctx, "x8"); // pop value
       gen_stmt_list(ctx, cur_case->body);
 
       cur_case = cur_case->next;
@@ -978,7 +981,6 @@ void gen_stmt(codegen_ctx_t *ctx, stmt_t *stmt) {
 
     if (default_case) {
       gen_label(ctx, default_case->label);
-      gen_pop(ctx, "x8"); // pop value
       gen_stmt_list(ctx, default_case->body);
     }
 

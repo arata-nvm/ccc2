@@ -110,7 +110,7 @@ void replace_reserved_tokens(token_t *token) {
 
 token_t *read_ident_token(tokenizer_ctx_t *ctx) {
   pos_t *pos = copy_pos(ctx->cur_pos);
-  char buf[256];
+  char buf[32];
   int buf_index = 0;
 
   char c;
@@ -138,7 +138,7 @@ token_t *read_ident_token(tokenizer_ctx_t *ctx) {
 
 token_t *read_number_token(tokenizer_ctx_t *ctx) {
   pos_t *pos = copy_pos(ctx->cur_pos);
-  char buf[256];
+  char buf[32];
   int buf_index = 0;
 
   char c;
@@ -189,7 +189,7 @@ char read_char_literal(tokenizer_ctx_t *ctx, int *is_escaped) {
 
 token_t *read_string_token(tokenizer_ctx_t *ctx) {
   pos_t *pos = copy_pos(ctx->cur_pos);
-  char buf[256];
+  char buf[128];
   int buf_index = 0;
 
   int c;
