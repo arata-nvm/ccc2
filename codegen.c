@@ -280,12 +280,20 @@ int eval_const_expr(codegen_ctx_t *ctx, expr_t *expr) {
   }
 }
 
-void gen(codegen_ctx_t *ctx, char *format, ...) {
+#ifdef __GNUC__
+#define GEN_NAME gen
+void GEN_NAME(codegen_ctx_t *ctx, char *format, ...) {
   va_list args;
   va_start(args, format);
   vfprintf(ctx->out_fp, format, args);
   va_end(args);
 }
+#else
+void gen(codegen_ctx_t *ctx, char *format, void *a1, void *a2, void *a3,
+         void *a4) {
+  fprintf(ctx->out_fp, format, a1, a2, a3, a4);
+}
+#endif
 
 void gen_label(codegen_ctx_t *ctx, int label) {
   gen(ctx, ".L.%s.%d:\n", ctx->cur_func_name, label);
